@@ -196,8 +196,9 @@ class MatchOrchestrator:
         self.start_time = time.perf_counter()
 
     def run_pipeline(self) -> Dict[str, Any]:
-        movs = self.db.query(MovimentacaoBancaria).all()
-        parcelas = self.db.query(ParcelaDespesa).all()
+        from app.models.domain import Despesa
+        movs = self.db.query(MovimentacaoBancaria).filter(MovimentacaoBancaria.execucao_id == self.execucao.id).all()
+        parcelas = self.db.query(ParcelaDespesa).join(Despesa).filter(Despesa.execucao_id == self.execucao.id).all()
         
         conciliados = self.db.query(ConciliacaoItem.movimentacao_id).all()
         conciliados_ids = {c[0] for c in conciliados if c[0]}

@@ -73,6 +73,7 @@ class TipoMovimentacao(str, enum.Enum):
 
 class MovimentacaoBancaria(AuditableBase):
     __tablename__ = 'movimentacoes_bancarias'
+    execucao_id = Column(String(36), ForeignKey('execucoes_pipeline.id'), nullable=True) # Vinculo com a execução que importou
     extrato_id = Column(UUID(as_uuid=True), ForeignKey('extratos_bancarios.id'))
     data = Column(Date, index=True)
     historico = Column(String)
@@ -84,6 +85,7 @@ class MovimentacaoBancaria(AuditableBase):
 
 class Despesa(AuditableBase):
     __tablename__ = 'despesas'
+    execucao_id = Column(String(36), ForeignKey('execucoes_pipeline.id'), nullable=True) # Vinculo com a execução que importou
     fornecedor_id = Column(UUID(as_uuid=True), ForeignKey('fornecedores.id'))
     projeto_id = Column(UUID(as_uuid=True), ForeignKey('projetos.id'), nullable=True)
     categoria_id = Column(UUID(as_uuid=True), ForeignKey('categorias_financeiras.id'), nullable=True)
@@ -127,6 +129,7 @@ class DocumentoFiscal(AuditableBase):
 
 class LancamentoContabil(AuditableBase):
     __tablename__ = 'lancamentos_contabeis'
+    execucao_id = Column(String(36), ForeignKey('execucoes_pipeline.id'), nullable=True) # Vinculo com a execução que importou
     conta_contabil_id = Column(UUID(as_uuid=True), ForeignKey('contas_contabeis.id'))
     data = Column(Date, index=True)
     historico = Column(String)

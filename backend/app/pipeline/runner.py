@@ -35,17 +35,26 @@ class SyncRunner(PipelineRunner):
                 logger.error(f"Execução {execucao_id} não encontrada.")
                 return
                 
-            orchestrator = MatchOrchestrator(self.db)
+            # Recupera caminhos dos arquivos e roda parsers
+            from app.models.domain import ImportacaoArquivo
+            importacoes = self.db.query(ImportacaoArquivo).filter(ImportacaoArquivo.execucao_id == execucao_id).all()
             
-            hashes = json.loads(execucao.hashes_arquivos) if execucao.hashes_arquivos else {}
+            from app.services.parsers import parse_despesas, parse_extrato, parse_razao
             
-            orchestrator.execute_pipeline(
-                execucao=execucao,
-                matching_profile_name=execucao.matching_profile,
-                despesas_file=hashes.get("despesas"),
-                razao_file=hashes.get("razao"),
-                extrato_file=hashes.get("extrato")
-            )
+            for imp in importacoes:
+                logger.info(f"Fazendo parse do arquivo {imp.tipo} - {imp.nome_original}")
+                with open(imp.storage_path, "rb") as f:
+                    if imp.tipo.value == "DESPESA":
+                        parse_despesas(f, self.db, execucao_id)
+                    elif imp.tipo.value == "EXTRATO":
+                        parse_extrato(f, self.db, execucao_id)
+                    elif imp.tipo.value == "RAZAO":
+                        parse_razao(f, self.db, execucao_id)
+            
+            # Agora executa o motor
+            orchestrator = MatchOrchestrator(self.db, execucao_id=execucao_id)
+            stats = orchestrator.run_pipeline()
+            logger.info(f"Pipeline concluído: {stats}")
             
         except Exception as e:
             logger.error(f"Erro no pipeline {execucao_id}: {e}")
