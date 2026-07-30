@@ -18,7 +18,7 @@ class DespesasERPAdapter(ImportAdapter):
         try:
             # Lemos a primeira linha de dados reais para ver as colunas
             df = pd.read_excel(file_path, nrows=5)
-            cols = set([str(c).lower().strip() for c in df.columns])
+            cols = {str(c).lower().strip() for c in df.columns}
             # Se tiver ID Parcela e Valor parcela, é o ERP Despesas
             if 'id parcela' in cols and 'valor parcela' in cols and 'fornecedor' in cols:
                 return True
@@ -27,7 +27,7 @@ class DespesasERPAdapter(ImportAdapter):
         return False
         
     def _get_or_create(self, db_session: Session, model, cache: dict, name: str, name_field='nome', **kwargs):
-        if not name or str(name).strip() == "" or pd.isna(name):
+        if pd.isna(name) or name is None or str(name).strip() == "":
             return None
         name_clean = str(name).strip()
         name_upper = name_clean.upper()
@@ -53,18 +53,18 @@ class DespesasERPAdapter(ImportAdapter):
         df.columns = df.columns.str.lower().str.strip()
         
         # Caches
-        cache_forn = {f.nome_normalizado: f for f in db_session.query(Fornecedor).all()}
-        cache_proj = {p.nome.upper(): p for p in db_session.query(Projeto).all()}
-        cache_conta = {c.banco.upper(): c for c in db_session.query(ContaBancaria).all() if c.banco}
-        cache_categ = {c.nome.upper(): c for c in db_session.query(CategoriaFinanceira).all()}
-        cache_emp = {e.razao_social.upper(): e for e in db_session.query(Empresa).all() if e.razao_social}
+        cache_forn = {f.nome_normalizado: f for f in db_session.query(Fornecedor).all() if getattr(f, 'nome_normalizado', None)}
+        cache_proj = {p.nome.upper(): p for p in db_session.query(Projeto).all() if getattr(p, 'nome', None)}
+        cache_conta = {c.banco.upper(): c for c in db_session.query(ContaBancaria).all() if getattr(c, 'banco', None)}
+        cache_categ = {c.nome.upper(): c for c in db_session.query(CategoriaFinanceira).all() if getattr(c, 'nome', None)}
+        cache_emp = {e.razao_social.upper(): e for e in db_session.query(Empresa).all() if getattr(e, 'razao_social', None)}
         
         despesas_por_id = {}
         novas_parcelas = 0
         
         for idx, row in df.iterrows():
             id_despesa = str(row.get('id', '')).strip()
-            if not id_despesa or pd.isna(row.get('id')):
+            if not id_despesa or id_despesa == 'nan' or pd.isna(row.get('id')):
                 continue
                 
             valor_parcela = self._parse_float(row.get('valor parcela', 0.0))
@@ -75,9 +75,9 @@ class DespesasERPAdapter(ImportAdapter):
             if id_despesa not in despesas_por_id:
                 forn = self._get_or_create(db_session, Fornecedor, cache_forn, row.get('fornecedor'))
                 proj = self._get_or_create(db_session, Projeto, cache_proj, row.get('projeto'))
-                # 'conta bancária' vai pra ContaBancaria(banco=nome) como fallback pro modelo atual
                 conta = self._get_or_create(db_session, ContaBancaria, cache_conta, row.get('conta bancária'), name_field='banco')
                 categ = self._get_or_create(db_session, CategoriaFinanceira, cache_categ, row.get('categoria financeira'))
+                empresa = self._get_or_create(db_session, Empresa, cache_emp, row.get('empresa'), name_field='razao_social')
                 
                 despesa = Despesa(
                     execucao_id=execucao_id,
@@ -87,9 +87,6 @@ class DespesasERPAdapter(ImportAdapter):
                     categoria_id=categ.id if categ else None,
                     valor_total=self._parse_float(row.get('valor total', 0.0)),
                     data_emissao=self._parse_date(row.get('data de competência')),
-                    # O status da despesa em si:
-                    # 'status': 'Pago' ou 'Em aberto' (não temos esse campo diretamente, ou temos? 
-                    # status_parcela que nos importa mais)
                 )
                 db_session.add(despesa)
                 db_session.flush()
@@ -98,10 +95,11 @@ class DespesasERPAdapter(ImportAdapter):
             despesa_pai = despesas_por_id[id_despesa]
             
             # Criar Parcela
-            id_parcela = str(row.get('id parcela', str(uuid.uuid4()))).strip()
-            
-            # extrair numero da parcela de "1/4" ou algo assim em "parcela"
-            desc_parcela = str(row.get('parcela', ''))
+            raw_id_parcela = row.get('id parcela', '')
+            if pd.isna(raw_id_parcela) or str(raw_id_parcela).strip() == '' or str(raw_id_parcela).strip().lower() == 'nan':
+                id_parcela = str(uuid.uuid4())
+            else:
+                id_parcela = str(raw_id_parcela).strip()
             
             parcela = ParcelaDespesa(
                 despesa_id=despesa_pai.id,
@@ -109,7 +107,7 @@ class DespesasERPAdapter(ImportAdapter):
                 valor=valor_parcela,
                 data_vencimento=self._parse_date(row.get('vencimento parcela')),
                 data_pagamento_esperada=self._parse_date(row.get('data de pagamento parcela')),
-                numero_parcela=novas_parcelas + 1 # Pode ser melhorado depois
+                numero_parcela=novas_parcelas + 1
             )
             db_session.add(parcela)
             novas_parcelas += 1

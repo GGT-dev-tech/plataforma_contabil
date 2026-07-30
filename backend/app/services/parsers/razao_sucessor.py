@@ -13,10 +13,10 @@ class RazaoSucessorAdapter(ImportAdapter):
             return False
         # Apenas tenta ler o header usando calamine, que ignora XML corrompido
         try:
-            df = pd.read_excel(file_path, nrows=5, engine="calamine")
-            # Valida as colunas ou layout do Razão
-            # Se for um Razão genérico
-            return True
+            df = pd.read_excel(file_path, nrows=5, engine="calamine", header=None)
+            text_content = " ".join([str(val) for val in df.values.flatten() if pd.notna(val)])
+            if "Razão" in text_content or "Histórico" in text_content or "Débito" in text_content:
+                return True
         except Exception as e:
             logger.debug(f"RazaoSucessorAdapter falhou em can_parse: {e}")
         return False
@@ -24,13 +24,11 @@ class RazaoSucessorAdapter(ImportAdapter):
     def parse(self, file_path: str, db_session: Session, execucao_id: str) -> bool:
         logger.info(f"Usando RazaoSucessorAdapter para arquivo {file_path}")
         try:
-            df = pd.read_excel(file_path, engine="calamine")
+            df = pd.read_excel(file_path, engine="calamine", header=None)
         except Exception as e:
             logger.error(f"Erro ao ler Razão com calamine: {e}")
             raise e
             
-        df = pd.read_excel(file_path, engine="calamine", header=None)
-        
         novos_lancamentos = 0
         current_date = None
         
@@ -39,7 +37,7 @@ class RazaoSucessorAdapter(ImportAdapter):
         for idx, row in df.iterrows():
             col0 = str(row[0]).strip() if pd.notna(row[0]) else ""
             
-            # Check if it's a date row (e.g. 01/06/2026)
+            # Check se é cabeçalho de data (01/06/2026)
             if re.match(r'^\d{2}/\d{2}/\d{4}$', col0):
                 parsed = self._parse_date(col0)
                 if parsed:
@@ -49,20 +47,19 @@ class RazaoSucessorAdapter(ImportAdapter):
             if not current_date:
                 continue
                 
-            if not col0 or col0 == "Histórico" or "Saldo" in col0 or col0.startswith("EMPRESA"):
+            if not col0 or col0 == "Histórico" or "Saldo" in col0 or "EMPRESA" in col0 or col0.startswith("Razão") or col0.startswith("nan"):
                 continue
                 
-            # It's a transaction row
+            # Na versão exportada do Sucessor, cada coluna está em uma posição específica
+            # 0: Histórico, 3: Lote, 5: Chave, 8: Contra, 10: Débito, 13: Crédito, 17: Saldo
             historico = col0
-            chave_origem = str(row[5]).strip() if pd.notna(row[5]) else ""
-            contra = str(row[8]).strip() if pd.notna(row[8]) else ""
+            chave_origem = str(row[5]).strip() if len(row) > 5 and pd.notna(row[5]) else ""
+            contra = str(row[8]).strip() if len(row) > 8 and pd.notna(row[8]) else ""
             
-            # Débito is around col 10
-            debito_str = str(row[10]).strip() if pd.notna(row[10]) else ""
+            debito_str = str(row[10]).strip() if len(row) > 10 and pd.notna(row[10]) else ""
             val_debito = self._parse_float(debito_str)
             
-            # Crédito is around col 13
-            cred_str = str(row[13]).strip() if pd.notna(row[13]) else ""
+            cred_str = str(row[13]).strip() if len(row) > 13 and pd.notna(row[13]) else ""
             val_cred = self._parse_float(cred_str)
             
             valor = 0.0
