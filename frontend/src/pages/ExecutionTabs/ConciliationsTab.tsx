@@ -1,6 +1,11 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { apiClient as api } from '../../services/api';
+import { DataTable } from '../../components/ui/DataTable';
+import { StatusBadge } from '../../components/ui/StatusBadge';
+import { EmptyState } from '../../components/ui/EmptyState';
+import { CheckCircle2 } from 'lucide-react';
+import { Loading } from '../../components/ui/Loading';
 
 export const ConciliationsTab: React.FC<{ executionId: string }> = ({ executionId }) => {
   const { data: conciliations, isLoading } = useQuery({
@@ -8,31 +13,68 @@ export const ConciliationsTab: React.FC<{ executionId: string }> = ({ executionI
     queryFn: async () => (await api.get(`/executions/${executionId}/conciliations`)).data
   });
 
-  if (isLoading) return <div>Carregando conciliações...</div>;
-  if (!conciliations || conciliations.length === 0) return <div>Nenhuma conciliação efetuada nesta execução.</div>;
+  if (isLoading) {
+    return <Loading text="Carregando conciliações..." />;
+  }
+
+  if (!conciliations || conciliations.length === 0) {
+    return (
+      <EmptyState 
+        icon={CheckCircle2}
+        title="Nenhuma conciliação efetuada"
+        description="Esta execução ainda não possui conciliações aprovadas."
+      />
+    );
+  }
+
+  const columns = [
+    { 
+      header: 'ID', 
+      accessor: (c: any) => c.conciliacao_id.substring(0, 8) 
+    },
+    { 
+      header: 'Movimentação Bancária', 
+      accessor: (c: any) => (
+        <div>
+          <p className="font-medium">{c.movimentacao.historico}</p>
+          <p className="text-sm text-gray-500">R$ {parseFloat(c.movimentacao.valor).toFixed(2)}</p>
+        </div>
+      ) 
+    },
+    { 
+      header: 'Parcela ERP', 
+      accessor: (c: any) => (
+        <div>
+          <p className="font-medium">{c.parcela?.fornecedor || 'N/A'}</p>
+          <p className="text-sm text-gray-500">R$ {c.parcela?.valor ? parseFloat(c.parcela.valor).toFixed(2) : '0.00'}</p>
+        </div>
+      ) 
+    },
+    { 
+      header: 'Score', 
+      accessor: (c: any) => c.score.toFixed(2) 
+    },
+    { 
+      header: 'Aprovado Por', 
+      accessor: (c: any) => (
+        <span className="text-sm font-medium text-gray-600 bg-gray-100 dark:bg-gray-800 dark:text-gray-300 px-2 py-1 rounded-md">
+          {c.aprovado_por || 'SYSTEM'}
+        </span>
+      )
+    },
+    {
+      header: 'Status',
+      accessor: (c: any) => <StatusBadge status={c.status} />
+    }
+  ];
 
   return (
-    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-      <thead>
-        <tr style={{ background: '#f5f5f5', textAlign: 'left' }}>
-          <th style={{ padding: '10px', borderBottom: '1px solid #ddd' }}>ID</th>
-          <th style={{ padding: '10px', borderBottom: '1px solid #ddd' }}>Movimentação</th>
-          <th style={{ padding: '10px', borderBottom: '1px solid #ddd' }}>Parcela</th>
-          <th style={{ padding: '10px', borderBottom: '1px solid #ddd' }}>Score</th>
-          <th style={{ padding: '10px', borderBottom: '1px solid #ddd' }}>Aprovado Por</th>
-        </tr>
-      </thead>
-      <tbody>
-        {conciliations.map((c: any) => (
-          <tr key={c.conciliacao_id} style={{ borderBottom: '1px solid #eee' }}>
-            <td style={{ padding: '10px' }}>{c.conciliacao_id.substring(0,8)}</td>
-            <td style={{ padding: '10px' }}>{c.movimentacao.historico} (R$ {c.movimentacao.valor})</td>
-            <td style={{ padding: '10px' }}>{c.parcela?.fornecedor} (R$ {c.parcela?.valor})</td>
-            <td style={{ padding: '10px' }}>{c.score.toFixed(2)}</td>
-            <td style={{ padding: '10px' }}>{c.aprovado_por || 'SYSTEM'}</td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
+    <div className="bg-white/30 dark:bg-gray-900/30 rounded-xl overflow-hidden">
+      <DataTable 
+        data={conciliations} 
+        columns={columns} 
+        keyExtractor={(c) => c.conciliacao_id}
+      />
+    </div>
   );
 };

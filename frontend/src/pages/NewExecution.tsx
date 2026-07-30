@@ -5,6 +5,7 @@ import { Button } from '../components/ui/Button';
 import { GlassPanel } from '../components/ui/GlassPanel';
 import { PageHeader } from '../components/layout/PageHeader';
 import { Breadcrumb } from '../components/layout/Breadcrumb';
+import { FileUp, FileSpreadsheet, AlertCircle, CheckCircle2 } from 'lucide-react';
 
 type FormState = 'IDLE' | 'LOADING' | 'PROCESSANDO' | 'CONCLUIDO' | 'ERRO';
 
@@ -63,46 +64,94 @@ export const NewExecution: React.FC = () => {
     }
   };
 
+  const FileDropzone = ({ label, file, onChange, disabled }: { label: string, file: File | null, onChange: any, disabled: boolean }) => (
+    <div className="relative overflow-hidden group">
+      <div className={`
+        border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200
+        ${file ? 'border-primary-400 bg-primary-50/10 dark:bg-primary-900/10' : 'border-gray-300 dark:border-gray-600 hover:border-primary-400 hover:bg-gray-50/50 dark:hover:bg-gray-800/50'}
+        ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+      `}>
+        <input 
+          type="file" 
+          accept=".xlsx,.csv" 
+          onChange={onChange} 
+          disabled={disabled}
+          className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed" 
+        />
+        
+        <div className="flex flex-col items-center justify-center space-y-3 pointer-events-none">
+          {file ? (
+            <>
+              <div className="w-12 h-12 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center text-primary-600 dark:text-primary-400">
+                <FileSpreadsheet className="w-6 h-6" />
+              </div>
+              <div className="space-y-1">
+                <p className="font-medium text-gray-900 dark:text-gray-100">{label}</p>
+                <p className="text-sm text-primary-600 dark:text-primary-400 truncate max-w-[250px]">{file.name}</p>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-gray-500 dark:text-gray-400 group-hover:scale-110 transition-transform">
+                <FileUp className="w-6 h-6" />
+              </div>
+              <div className="space-y-1">
+                <p className="font-medium text-gray-700 dark:text-gray-300">{label}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Clique ou arraste um arquivo .xlsx</p>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
   return (
-    <div className="space-y-6 max-w-3xl mx-auto">
+    <div className="space-y-6 max-w-4xl mx-auto">
       <Breadcrumb items={[{ label: 'Execuções', href: '/executions' }, { label: 'Nova Conciliação' }]} />
       <PageHeader title="Nova Conciliação" description="Inicie um novo processo de conciliação enviando os arquivos base." />
 
       <GlassPanel className="p-8">
         {status === 'ERRO' && (
-          <div className="p-4 bg-red-50 text-red-700 border border-red-200 rounded-lg mb-6">
-            {errorMsg}
+          <div className="p-4 bg-destructive/10 text-destructive border border-destructive/20 rounded-lg mb-6 flex items-center gap-3">
+            <AlertCircle className="w-5 h-5" />
+            <p className="font-medium">{errorMsg}</p>
           </div>
         )}
         
         {status === 'CONCLUIDO' && (
-          <div className="p-4 bg-green-50 text-green-700 border border-green-200 rounded-lg mb-6">
-            Pipeline iniciada com sucesso! Redirecionando...
+          <div className="p-4 bg-green-50 dark:bg-green-500/10 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-500/20 rounded-lg mb-6 flex items-center gap-3">
+            <CheckCircle2 className="w-5 h-5" />
+            <p className="font-medium">Pipeline iniciada com sucesso! Redirecionando...</p>
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-6 text-center hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-            <label className="block font-medium text-gray-700 dark:text-gray-300 mb-2">Arquivo de Despesas (XLSX/CSV)</label>
-            <input type="file" accept=".xlsx,.csv" onChange={handleFileChange(setDespesas)} disabled={status !== 'IDLE' && status !== 'ERRO'} className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
-            {despesas && <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">Selecionado: {despesas.name}</p>}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <FileDropzone 
+              label="Despesas (ERP)" 
+              file={despesas} 
+              onChange={handleFileChange(setDespesas)} 
+              disabled={status !== 'IDLE' && status !== 'ERRO'} 
+            />
+            <FileDropzone 
+              label="Razão Contábil" 
+              file={razao} 
+              onChange={handleFileChange(setRazao)} 
+              disabled={status !== 'IDLE' && status !== 'ERRO'} 
+            />
+            <FileDropzone 
+              label="Extrato Bancário" 
+              file={extrato} 
+              onChange={handleFileChange(setExtrato)} 
+              disabled={status !== 'IDLE' && status !== 'ERRO'} 
+            />
           </div>
 
-          <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-6 text-center hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-            <label className="block font-medium text-gray-700 dark:text-gray-300 mb-2">Arquivo de Razão (XLSX/CSV)</label>
-            <input type="file" accept=".xlsx,.csv" onChange={handleFileChange(setRazao)} disabled={status !== 'IDLE' && status !== 'ERRO'} className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
-            {razao && <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">Selecionado: {razao.name}</p>}
-          </div>
-
-          <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-6 text-center hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-            <label className="block font-medium text-gray-700 dark:text-gray-300 mb-2">Arquivo de Extrato (XLSX/CSV)</label>
-            <input type="file" accept=".xlsx,.csv" onChange={handleFileChange(setExtrato)} disabled={status !== 'IDLE' && status !== 'ERRO'} className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100" />
-            {extrato && <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">Selecionado: {extrato.name}</p>}
-          </div>
-
-          <div className="pt-4 flex justify-end">
+          <div className="pt-6 border-t border-gray-200 dark:border-gray-700/50 flex justify-end">
             <Button 
               type="submit" 
+              size="lg"
               isLoading={status === 'LOADING' || status === 'PROCESSANDO' || status === 'CONCLUIDO'}
             >
               {status === 'IDLE' && 'Iniciar Conciliação'}
