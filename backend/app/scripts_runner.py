@@ -36,3 +36,4 @@ def run_startup_tasks():
         # Retorna ao dir original em caso de erro
         if 'original_cwd' in locals():
             os.chdir(original_cwd)
+        raise e

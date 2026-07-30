@@ -31,6 +31,16 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
     })
     return {"access_token": access_token, "token_type": "bearer"}
 
+@router.get("/auth/seed-admin")
+def run_seed_admin_get():
+    import traceback
+    from app.scripts_runner import run_startup_tasks
+    try:
+        run_startup_tasks()
+        return {"message": "Startup tasks executed successfully!"}
+    except Exception as e:
+        return {"error": str(e), "traceback": traceback.format_exc()}
+
 # Endpoint para criar seed admin caso banco vazio (Apenas para testes do MVP)
 @router.post("/auth/seed-admin")
 def seed_admin(db: Session = Depends(get_db)):
