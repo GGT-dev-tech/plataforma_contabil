@@ -65,13 +65,12 @@ def parse_despesas(file_stream: BinaryIO, db: Session, execucao_id: str):
             # 1. Obter ou Criar Fornecedor
             forn = fornecedores_existentes.get(fornecedor_norm)
             if not forn:
-                forn = Fornecedor(id=str(uuid.uuid4()), nome=fornecedor_nome, nome_normalizado=fornecedor_norm)
+                forn = Fornecedor(nome=fornecedor_nome, nome_normalizado=fornecedor_norm)
                 db.add(forn)
                 fornecedores_existentes[fornecedor_norm] = forn
                 
             # 2. Criar Despesa
             despesa = Despesa(
-                id=str(uuid.uuid4()),
                 execucao_id=execucao_id,
                 fornecedor_id=forn.id,
                 valor_total=valor,
@@ -81,7 +80,6 @@ def parse_despesas(file_stream: BinaryIO, db: Session, execucao_id: str):
             
             # 3. Criar Parcela
             parcela = ParcelaDespesa(
-                id=str(uuid.uuid4()),
                 despesa_id=despesa.id,
                 numero_parcela=1,
                 valor=valor,
@@ -109,7 +107,7 @@ def parse_extrato(file_stream: BinaryIO, db: Session, execucao_id: str):
         df = pd.read_excel(file_stream) if hasattr(file_stream, 'name') and file_stream.name.endswith((".xlsx", ".xls")) else pd.read_csv(file_stream)
         df.columns = df.columns.str.lower().str.strip()
         
-        extrato = ExtratoBancario(id=str(uuid.uuid4()))
+        extrato = ExtratoBancario()
         db.add(extrato)
         
         novos_movimentos = 0
@@ -124,7 +122,6 @@ def parse_extrato(file_stream: BinaryIO, db: Session, execucao_id: str):
             tipo = TipoMovimentacao.D if valor < 0 else TipoMovimentacao.C
             
             mov = MovimentacaoBancaria(
-                id=str(uuid.uuid4()),
                 execucao_id=execucao_id,
                 extrato_id=extrato.id,
                 data=data,
@@ -168,7 +165,6 @@ def parse_razao(file_stream: BinaryIO, db: Session, execucao_id: str):
             tipo = TipoMovimentacao.D if valor < 0 else TipoMovimentacao.C
             
             lanc = LancamentoContabil(
-                id=str(uuid.uuid4()),
                 execucao_id=execucao_id,
                 data=data,
                 historico=historico,
