@@ -226,9 +226,9 @@ class ConciliacaoItem(AuditableBase):
     conciliacao_id = Column(String(36), ForeignKey("conciliacoes.id"), nullable=False)
     
     # Entidades vinculadas (todas opcionais, pois depende do lado do match)
-    parcela_id = Column(String(36), ForeignKey("parcelas_despesa.id"), nullable=True)
-    movimentacao_id = Column(String(36), ForeignKey("movimentacoes_bancarias.id"), nullable=True)
-    lancamento_id = Column(String(36), ForeignKey("lancamentos_contabeis.id"), nullable=True)
+    parcela_id = Column(UUID(as_uuid=True), ForeignKey("parcelas_despesa.id"), nullable=True)
+    movimentacao_id = Column(UUID(as_uuid=True), ForeignKey("movimentacoes_bancarias.id"), nullable=True)
+    lancamento_id = Column(UUID(as_uuid=True), ForeignKey("lancamentos_contabeis.id"), nullable=True)
 
     # Relacionamentos
     conciliacao = relationship("Conciliacao", back_populates="itens")

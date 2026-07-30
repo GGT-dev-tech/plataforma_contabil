@@ -7,7 +7,6 @@ import { NewExecution } from './pages/NewExecution';
 import { CandidatesQueue } from './pages/CandidatesQueue';
 import { Divergencies } from './pages/Divergencies';
 import { NavBar } from './components/NavBar';
-import { Role } from './types/user';
 import { PERMISSIONS } from './auth/permissions';
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
