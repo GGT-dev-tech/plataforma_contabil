@@ -39,17 +39,16 @@ class SyncRunner(PipelineRunner):
             from app.models.domain import ImportacaoArquivo
             importacoes = self.db.query(ImportacaoArquivo).filter(ImportacaoArquivo.execucao_id == execucao_id).all()
             
-            from app.services.parsers import parse_despesas, parse_extrato, parse_razao
+            from app.services.parsers import ParserFactory
             
             for imp in importacoes:
-                logger.info(f"Fazendo parse do arquivo {imp.tipo} - {imp.nome_original}")
-                with open(imp.storage_path, "rb") as f:
-                    if imp.tipo.value == "DESPESA":
-                        parse_despesas(f, self.db, execucao_id)
-                    elif imp.tipo.value == "EXTRATO":
-                        parse_extrato(f, self.db, execucao_id)
-                    elif imp.tipo.value == "RAZAO":
-                        parse_razao(f, self.db, execucao_id)
+                logger.info(f"Procurando parser para o arquivo {imp.tipo} - {imp.nome_original}")
+                parser = ParserFactory.get_parser(imp.storage_path, imp.tipo)
+                if parser:
+                    logger.info(f"Parser encontrado: {parser.__class__.__name__}. Iniciando processamento...")
+                    parser.parse(imp.storage_path, self.db, execucao_id)
+                else:
+                    logger.warning(f"Nenhum parser encontrado para {imp.nome_original} (Tipo: {imp.tipo})")
             
             # Agora executa o motor
             orchestrator = MatchOrchestrator(self.db, execucao_id=execucao_id)
