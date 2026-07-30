@@ -77,6 +77,7 @@ def parse_despesas(file_stream: BinaryIO, db: Session, execucao_id: str):
                 id_uuid_origem=documento
             )
             db.add(despesa)
+            db.flush()
             
             # 3. Criar Parcela
             parcela = ParcelaDespesa(
@@ -109,6 +110,7 @@ def parse_extrato(file_stream: BinaryIO, db: Session, execucao_id: str):
         
         extrato = ExtratoBancario()
         db.add(extrato)
+        db.flush()
         
         novos_movimentos = 0
         for idx, row in df.iterrows():
