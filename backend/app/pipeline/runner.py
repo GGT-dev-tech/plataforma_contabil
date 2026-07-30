@@ -24,20 +24,19 @@ class SyncRunner(PipelineRunner):
     def _execute_pipeline_task(self, execucao_id: str):
         from app.engine.core import MatchOrchestrator
         from app.models.domain import ExecucaoPipeline, StatusExecucao
+        from app.api.deps import SessionLocal
         import json
         
-        # Como é rodado numa nova task, precisamos recarregar o obj e gerenciar sessões cuidadosamente.
-        # No MVP, usaremos self.db mas o ideal é criar nova Session
-        
+        db = SessionLocal()
         try:
-            execucao = self.db.query(ExecucaoPipeline).filter(ExecucaoPipeline.id == execucao_id).first()
+            execucao = db.query(ExecucaoPipeline).filter(ExecucaoPipeline.id == execucao_id).first()
             if not execucao:
                 logger.error(f"Execução {execucao_id} não encontrada.")
                 return
                 
             # Recupera caminhos dos arquivos e roda parsers
             from app.models.domain import ImportacaoArquivo
-            importacoes = self.db.query(ImportacaoArquivo).filter(ImportacaoArquivo.execucao_id == execucao_id).all()
+            importacoes = db.query(ImportacaoArquivo).filter(ImportacaoArquivo.execucao_id == execucao_id).all()
             
             from app.services.parsers import ParserFactory
             
@@ -46,20 +45,24 @@ class SyncRunner(PipelineRunner):
                 parser = ParserFactory.get_parser(imp.storage_path, imp.tipo)
                 if parser:
                     logger.info(f"Parser encontrado: {parser.__class__.__name__}. Iniciando processamento...")
-                    parser.parse(imp.storage_path, self.db, execucao_id)
+                    parser.parse(imp.storage_path, db, execucao_id)
                 else:
                     logger.warning(f"Nenhum parser encontrado para {imp.nome_original} (Tipo: {imp.tipo})")
             
             # Agora executa o motor
-            orchestrator = MatchOrchestrator(self.db, execucao_id=execucao_id)
+            orchestrator = MatchOrchestrator(db, execucao_id=execucao_id)
             stats = orchestrator.run_pipeline()
             logger.info(f"Pipeline concluído: {stats}")
             
         except Exception as e:
             logger.error(f"Erro no pipeline {execucao_id}: {e}")
+            execucao = db.query(ExecucaoPipeline).filter(ExecucaoPipeline.id == execucao_id).first()
             if execucao:
                 execucao.status = StatusExecucao.ERRO
                 execucao.erro_codigo = type(e).__name__
                 execucao.erro_mensagem = str(e)
+                import traceback
                 execucao.erro_stacktrace = traceback.format_exc()
-                self.db.commit()
+                db.commit()
+        finally:
+            db.close()

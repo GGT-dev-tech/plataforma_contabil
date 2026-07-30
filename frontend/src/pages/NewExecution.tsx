@@ -45,7 +45,7 @@ export const NewExecution: React.FC = () => {
       formData.append('despesas', despesas);
       formData.append('razao', razao);
       formData.append('extrato', extrato);
-      await api.post(`/executions/${execution.id}/upload`, formData, {
+      await api.post(`/executions/${execution.id}/files`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
 
