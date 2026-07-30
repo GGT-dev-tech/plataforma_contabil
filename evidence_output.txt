@@ -1,0 +1,41 @@
+Execução: 7c0d8f85-79bd-4e36-bb13-e7b3b114b853
+Movimentações importadas: 4
+Despesas importadas: 4
+Parcelas importadas: 4
+Candidatos gerados: 10
+Conciliações criadas (total db): 3
+----------------------------------------
+Distribuição de Status:
+REJEITADO_PELO_MOTOR: 7
+APROVADO: 3
+----------------------------------------
+Exemplo de Candidato APROVADO:
+{
+  "score": 96.25,
+  "status": "APROVADO",
+  "explanation_snapshot": [
+    {
+      "nome": "ValueRule",
+      "score": 100.0,
+      "peso": 2.0,
+      "confidence": 1.0,
+      "justificativa": "Match exato de valor"
+    },
+    {
+      "nome": "DateRule",
+      "score": 90.0,
+      "peso": 1.5,
+      "confidence": 0.8,
+      "justificativa": "Diferen\u00e7a de 1 dia(s)"
+    }
+  ]
+}
+----------------------------------------
+Exemplo de Conciliação Criada:
+{
+  "id": "c78d76d6-0237-4a4a-861e-f47bd584f8bc",
+  "movimentacao_id": "8e0eee09-77a6-445e-9480-d007db79a53c",
+  "parcela_id": "40e147e0-613f-4a85-bcb4-f3deea90f3fe",
+  "status": "APROVADO",
+  "approved_by": "SYSTEM"
+}

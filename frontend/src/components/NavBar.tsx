@@ -11,8 +11,7 @@ export const NavBar: React.FC = () => {
         <h1 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 'bold' }}>Plataforma Contábil</h1>
         
         <div style={{ display: 'flex', gap: '1rem' }}>
-          <Link to="/candidates" style={{ color: '#d1d5db', textDecoration: 'none' }}>Revisão</Link>
-          <Link to="/divergencies" style={{ color: '#d1d5db', textDecoration: 'none' }}>Auditoria</Link>
+          <Link to="/executions" style={{ color: '#d1d5db', textDecoration: 'none' }}>Execuções</Link>
           {user && (user.role === 'ADMIN' || user.role === 'ANALISTA') && (
             <Link to="/executions/new" style={{ color: '#d1d5db', textDecoration: 'none' }}>Nova Execução</Link>
           )}
