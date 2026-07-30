@@ -158,10 +158,14 @@ def execution_candidates(exec_id: str, status: str = "PENDENTE_REVISAO", db: Ses
         c_dict = c.__dict__.copy()
         if '_sa_instance_state' in c_dict: del c_dict['_sa_instance_state']
         c_dict['regras'] = json.loads(c.explanation_snapshot) if c.explanation_snapshot else []
+        from app.models.domain import LancamentoContabil
         mov = db.query(MovimentacaoBancaria).filter(MovimentacaoBancaria.id == c.movimentacao_id).first()
-        par = db.query(ParcelaDespesa).filter(ParcelaDespesa.id == c.parcela_id).first() if c.parcela_id else None
+        par = db.query(ParcelaDespesa).filter(ParcelaDespesa.id == c.parcela_id).first() if getattr(c, 'parcela_id', None) else None
+        lanc = db.query(LancamentoContabil).filter(LancamentoContabil.id == c.lancamento_id).first() if getattr(c, 'lancamento_id', None) else None
+        
         c_dict['movimentacao_original'] = {"historico": mov.historico if mov else "", "valor": str(mov.valor) if mov else "0.0", "data": mov.data.isoformat() if mov and mov.data else None}
-        c_dict['parcela_original'] = {"documento": par.documento_relacionado if par else "", "fornecedor": par.fornecedor.nome_normalizado if par and par.fornecedor else "", "valor": str(par.valor) if par else "0.0", "data_vencimento": par.data_vencimento.isoformat() if par and par.data_vencimento else None}
+        c_dict['parcela_original'] = {"documento": par.documento_relacionado if par else "", "fornecedor": par.fornecedor.nome_normalizado if par and par.fornecedor else "", "valor": str(par.valor) if par else "0.0", "data_vencimento": par.data_vencimento.isoformat() if par and par.data_vencimento else None} if par else None
+        c_dict['lancamento_original'] = {"historico": lanc.historico if lanc else "", "chave": lanc.chave if lanc else "", "debito": str(lanc.valor_debito) if lanc else "0.0", "credito": str(lanc.valor_credito) if lanc else "0.0"} if lanc else None
         results.append(c_dict)
     return results
 
@@ -179,6 +183,7 @@ def execution_conciliations(exec_id: str, db: Session = Depends(get_db), current
         c = item.conciliacao
         mov = item.movimentacao
         par = item.parcela
+        lanc = item.lancamento
         results.append({
             "conciliacao_id": c.id,
             "status": c.status.name,
@@ -186,7 +191,8 @@ def execution_conciliations(exec_id: str, db: Session = Depends(get_db), current
             "data_conciliacao": c.data_criacao.isoformat() if c.data_criacao else None,
             "score": c.score_match,
             "movimentacao": {"historico": mov.historico if mov else "", "valor": str(mov.valor) if mov else "0.0", "data": mov.data.isoformat() if mov and mov.data else None},
-            "parcela": {"documento": par.documento_relacionado if par else "", "fornecedor": par.fornecedor.nome_normalizado if par and par.fornecedor else "", "valor": str(par.valor) if par else "0.0"} if par else None
+            "parcela": {"documento": par.documento_relacionado if par else "", "fornecedor": par.fornecedor.nome_normalizado if par and par.fornecedor else "", "valor": str(par.valor) if par else "0.0"} if par else None,
+            "lancamento": {"historico": lanc.historico if lanc else "", "chave": lanc.chave if lanc else "", "debito": str(lanc.valor_debito) if lanc else "0.0", "credito": str(lanc.valor_credito) if lanc else "0.0"} if lanc else None
         })
     return results
 

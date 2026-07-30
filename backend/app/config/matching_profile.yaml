@@ -1,12 +1,18 @@
-matching_profile: "financeiro_2026"
-version: "1.0.0"
-description: "Calibração de regras para extração determinística e conservadora"
-
-weights:
-  ValueRule: 2.0
-  DateRule: 1.5
-  PixRule: 3.0
-
+description: "Calibra\xE7\xE3o de regras para extra\xE7\xE3o determin\xEDstica e conservadora"
+matching_profile: financeiro_2026
 thresholds:
   auto: 90.0
+  automatico: 85.0
+  rejeicao: 20.0
   review: 70.0
+  revisao: 30.0
+version: 1.0.0
+weights:
+  DateProximityRule: 0.1
+  DateRule: 1.5
+  ExactValueRule: 0.4
+  LancamentoDateRule: 0.1
+  LancamentoValueRule: 0.4
+  PixRule: 3.0
+  TextSimilarityRule: 0.0
+  ValueRule: 2.0

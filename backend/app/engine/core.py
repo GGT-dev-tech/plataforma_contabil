@@ -34,29 +34,57 @@ class CandidateGenerator:
         }
         self.discard_log = []
 
-    def get_candidates_for_movimentacao(self, mov: MovimentacaoBancaria, parcelas_pendentes: List[ParcelaDespesa]) -> List[Tuple[ParcelaDespesa, Optional[str]]]:
-        # Returns tuple of (Parcela, motivo_descarte se houver)
-        candidatos = []
+    def get_candidates_for_movimentacao(
+        self, 
+        mov: MovimentacaoBancaria, 
+        parcelas_pendentes: List[ParcelaDespesa],
+        lancamentos_pendentes: List[LancamentoContabil]
+    ) -> List[Tuple[Optional[ParcelaDespesa], Optional[LancamentoContabil], Optional[str]]]:
+        
+        candidatos_parcelas = []
         for p in parcelas_pendentes:
             self.metrics["avaliados_total"] += 1
             if not p.data_vencimento or not mov.data:
                 self.discard_log.append({"mov_id": str(mov.id), "parcela_id": str(p.id), "motivo": "Data ausente"})
                 self.metrics["descartados_data"] += 1
-                candidatos.append((p, "Data ausente"))
                 continue
-                
             days_diff = abs((p.data_vencimento - mov.data).days)
             if days_diff > 10:
-                motivo = f"Data fora da janela (+-10 dias). Diff: {days_diff}"
-                self.discard_log.append({"mov_id": str(mov.id), "parcela_id": str(p.id), "motivo": motivo})
+                self.discard_log.append({"mov_id": str(mov.id), "parcela_id": str(p.id), "motivo": f"Data fora da janela (+-10 dias). Diff: {days_diff}"})
                 self.metrics["descartados_data"] += 1
-                candidatos.append((p, motivo))
                 continue
-                
-            candidatos.append((p, None))
+            candidatos_parcelas.append(p)
             self.metrics["aprovados_filtro"] += 1
-            
-        return candidatos
+
+        candidatos_lancamentos = []
+        for l in lancamentos_pendentes:
+            if not l.data or not mov.data:
+                continue
+            days_diff = abs((l.data - mov.data).days)
+            if days_diff > 10:
+                continue
+            candidatos_lancamentos.append(l)
+
+        # Se não encontrou nem parcela nem lancamento, descarte total
+        if not candidatos_parcelas and not candidatos_lancamentos:
+            return [(None, None, "Sem candidatos (parcela ou lançamento) no raio de 10 dias.")]
+
+        # Combinar: se tiver de ambos, cruzamos. Mas para evitar cartesiano enorme, limitamos a 10*10 = 100.
+        # Geralmente há 1-2 parcelas e 1-2 lancamentos pra mesma data.
+        candidatos_finais = []
+        
+        if candidatos_parcelas and candidatos_lancamentos:
+            for p in candidatos_parcelas:
+                for l in candidatos_lancamentos:
+                    candidatos_finais.append((p, l, None))
+        elif candidatos_parcelas:
+            for p in candidatos_parcelas:
+                candidatos_finais.append((p, None, None))
+        elif candidatos_lancamentos:
+            for l in candidatos_lancamentos:
+                candidatos_finais.append((None, l, None))
+                
+        return candidatos_finais
 
 class ScoringEngine:
     def __init__(self, rules: List[IMatchingRule]):
@@ -199,11 +227,12 @@ class MatchOrchestrator:
         from app.models.domain import Despesa
         movs = self.db.query(MovimentacaoBancaria).filter(MovimentacaoBancaria.execucao_id == self.execucao.id).all()
         parcelas = self.db.query(ParcelaDespesa).join(Despesa).filter(Despesa.execucao_id == self.execucao.id).all()
+        lancamentos = self.db.query(LancamentoContabil).filter(LancamentoContabil.execucao_id == self.execucao.id).all()
         
-        conciliados = self.db.query(ConciliacaoItem.movimentacao_id).all()
-        conciliados_ids = {c[0] for c in conciliados if c[0]}
+        conciliados_mov = self.db.query(ConciliacaoItem.movimentacao_id).all()
+        conciliados_mov_ids = {c[0] for c in conciliados_mov if c[0]}
         
-        movs_pendentes = [m for m in movs if m.id not in conciliados_ids]
+        movs_pendentes = [m for m in movs if m.id not in conciliados_mov_ids]
         
         stats = {
             "total_movimentos": len(movs),
