@@ -7,10 +7,23 @@ from app.api.endpoints import router
 from app.core.config import settings
 from app.api.deps import get_db
 
+from contextlib import asynccontextmanager
+from alembic.config import Config
+from alembic import command
+import os
+from app.scripts_runner import run_startup_tasks
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Executa as migrations e popula o banco de forma automática e segura no Railway
+    run_startup_tasks()
+    yield
+
 app = FastAPI(
     title=settings.APP_NAME,
     description="API de Consulta de Conciliações e Auditoria",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan
 )
 
 # Parse CORS origins
