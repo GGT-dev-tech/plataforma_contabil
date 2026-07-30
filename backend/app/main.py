@@ -15,7 +15,8 @@ from app.scripts_runner import run_startup_tasks
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Temporarily disabled to prevent startup crash
+    # Executa as migrations e popula o banco de forma automática e segura no Railway
+    run_startup_tasks()
     yield
 
 app = FastAPI(
