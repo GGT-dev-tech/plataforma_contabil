@@ -1,0 +1,102 @@
+{
+  "dataset_version": "1.0.0",
+  "schema_version": "1",
+  "generated_at": "2026-07-30T03:45:00Z",
+  "description": "Baseline of expected matches for E2E Regression. Asserts deterministic rules engine execution.",
+  "matches": [
+    {
+      "mov_desc": "Pix enviado: \"Cp :60701190-LOJA DO PAULO\"",
+      "mov_valor": 1392.2,
+      "parcela_valor": 1392.2,
+      "score": 100.0,
+      "status": "APROVADO",
+      "regras": [
+        {"nome": "ValueRule", "score": 100.0},
+        {"nome": "DateRule", "score": 100.0},
+        {"nome": "PixRule", "score": 100.0}
+      ]
+    },
+    {
+      "mov_desc": "Pix enviado: \"Cp :90400888-Bh Materiais de Construcao LTDA\"",
+      "mov_valor": 1910.2,
+      "parcela_valor": 1910.2,
+      "score": 100.0,
+      "status": "APROVADO",
+      "regras": [
+        {"nome": "ValueRule", "score": 100.0},
+        {"nome": "DateRule", "score": 100.0},
+        {"nome": "PixRule", "score": 100.0}
+      ]
+    },
+    {
+      "mov_desc": "Pix enviado: \"Cp :65239402-UP ESQUADRIAS\"",
+      "mov_valor": 132500.0,
+      "parcela_valor": 132500.0,
+      "score": 100.0,
+      "status": "APROVADO",
+      "regras": [
+        {"nome": "ValueRule", "score": 100.0},
+        {"nome": "DateRule", "score": 100.0},
+        {"nome": "PixRule", "score": 100.0}
+      ]
+    },
+    {
+      "mov_desc": "Pix enviado: \"Cp :20855875-Ismael Lima Alves\"",
+      "mov_valor": 100.0,
+      "parcela_valor": 103.2,
+      "score": 87.2,
+      "status": "PENDENTE",
+      "regras": [
+        {"nome": "ValueRule", "score": 68.0},
+        {"nome": "DateRule", "score": 100.0}
+      ]
+    },
+    {
+      "mov_desc": "Pix enviado: \"Cp :18236120-Isaias Alves Toledo Moreira\"",
+      "mov_valor": 1000.0,
+      "parcela_valor": 1000.0,
+      "score": 93.0232558139535,
+      "status": "APROVADO",
+      "regras": [
+        {"nome": "ValueRule", "score": 100.0},
+        {"nome": "DateRule", "score": 0.0}
+      ]
+    },
+    {
+      "mov_desc": "Pix enviado: \"Cp :60701190-Casa Ferreira Goncalves LTDA\"",
+      "mov_valor": 14892.27,
+      "parcela_valor": 14892.27,
+      "score": 84.99999999999999,
+      "status": "PENDENTE",
+      "regras": [
+        {"nome": "ValueRule", "score": 100.0},
+        {"nome": "DateRule", "score": 80.0},
+        {"nome": "PixRule", "score": 75.0}
+      ]
+    },
+    {
+      "mov_desc": "Pix enviado: \"Cp :31872495-Ademilton Santos Reis\"",
+      "mov_valor": 680.0,
+      "parcela_valor": 680.0,
+      "score": 95.71428571428571,
+      "status": "APROVADO",
+      "regras": [
+        {"nome": "ValueRule", "score": 100.0},
+        {"nome": "DateRule", "score": 80.0},
+        {"nome": "PixRule", "score": 100.0}
+      ]
+    },
+    {
+      "mov_desc": "Pix enviado: \"Cp :20855875-Ismael Lima Alves\"",
+      "mov_valor": 1560.0,
+      "parcela_valor": 1280.0,
+      "score": 73.04347826086956,
+      "status": "PENDENTE",
+      "regras": [
+        {"nome": "ValueRule", "score": 0.0},
+        {"nome": "DateRule", "score": 80.0},
+        {"nome": "PixRule", "score": 100.0}
+      ]
+    }
+  ]
+}

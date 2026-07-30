@@ -1,0 +1,753 @@
+Continuando a estruturação como **Tech Lead / Arquiteto de Sistemas**, agora vamos entrar no **Documento UML — Versão 1 (baseado no problema real identificado)**.
+
+O objetivo desse UML não é apenas desenhar classes. Ele precisa servir como documento de alinhamento entre:
+
+* você (responsável pela solução);
+* cliente (contabilidade);
+* futuros desenvolvedores;
+* possíveis parceiros/programadores;
+* validação da arquitetura antes da implementação.
+
+---
+
+# DOCUMENTO UML — SISTEMA DE CONCILIAÇÃO FINANCEIRA E CONTÁBIL AUTOMATIZADA
+
+## 1. Visão Geral do Sistema
+
+### Nome provisório do projeto
+
+**Sistema Inteligente de Integração e Conciliação Contábil Multissistema**
+
+---
+
+## 2. Objetivo
+
+Criar uma plataforma capaz de importar dados provenientes de diferentes sistemas utilizados por construtoras, realizar tratamento, padronização, cruzamento e validação automática entre:
+
+* Dados financeiros internos;
+* Movimentações bancárias;
+* Registros contábeis.
+
+O sistema deverá reduzir atividades manuais da contabilidade, aumentar confiabilidade dos dados e permitir escala para múltiplos clientes/construtoras.
+
+---
+
+# UML 1 — Diagrama de Caso de Uso
+
+## Atores do Sistema
+
+### Ator 1 — Analista Contábil
+
+Responsável por:
+
+* importar arquivos;
+* acompanhar processamento;
+* analisar divergências;
+* aprovar conciliações.
+
+---
+
+### Ator 2 — Sistema ERP da Construtora
+
+Fornece:
+
+* despesas;
+* fornecedores;
+* projetos;
+* pagamentos.
+
+---
+
+### Ator 3 — Banco
+
+Fornece:
+
+* extratos;
+* movimentações financeiras.
+
+---
+
+### Ator 4 — Sistema Contábil
+
+Fornece:
+
+* razão;
+* lançamentos;
+* contas contábeis.
+
+---
+
+# Casos de Uso
+
+## UC001 — Importar Arquivo
+
+Ator:
+
+Analista Contábil
+
+Entrada:
+
+```
+.xlsx
+.csv
+.pdf
+```
+
+Processos:
+
+* validar arquivo;
+* identificar origem;
+* armazenar arquivo original.
+
+Resultado:
+
+Arquivo disponível para processamento.
+
+---
+
+## UC002 — Identificar Layout
+
+Esse é um ponto estratégico.
+
+O sistema precisa descobrir:
+
+"Esse arquivo veio de qual sistema?"
+
+Exemplo:
+
+Entrada:
+
+```
+Razão SUCESSOR.xlsx
+```
+
+Identificação:
+
+```
+Sistema origem:
+SCI Visual Sucessor
+```
+
+---
+
+Outro exemplo:
+
+```
+Extrato Banco Inter.xlsx
+```
+
+Identificação:
+
+```
+Tipo:
+Extrato bancário
+```
+
+---
+
+## UC003 — Processar Dados
+
+Responsável:
+
+Motor ETL
+
+Fluxo:
+
+```
+Arquivo bruto
+
+↓
+
+Extração
+
+↓
+
+Tratamento
+
+↓
+
+Normalização
+
+↓
+
+Modelo Canônico
+```
+
+---
+
+## UC004 — Executar Conciliação
+
+Principal caso de uso.
+
+Entrada:
+
+```
+Despesa
++
+Banco
++
+Razão
+```
+
+Processo:
+
+Executar regras:
+
+* valor;
+* data;
+* fornecedor;
+* documento;
+* histórico.
+
+Resultado:
+
+```
+Conciliado
+ou
+Divergente
+```
+
+---
+
+## UC005 — Gerar Relatório
+
+Saída:
+
+Excel / Dashboard:
+
+Exemplo:
+
+```
+Resumo:
+
+Total despesas:
+R$ 500.000
+
+Conciliado:
+R$ 480.000
+
+Divergente:
+R$ 20.000
+```
+
+---
+
+# UML 2 — Diagrama de Componentes
+
+Arquitetura lógica:
+
+```
+                 FRONTEND
+                    |
+                    |
+              React Application
+                    |
+                    |
+                  API
+                    |
+          FastAPI Backend Python
+                    |
+ ------------------------------------------------
+ |                     |                        |
+ |                     |                        |
+Import Engine     Matching Engine        Report Engine
+
+ |                     |                        |
+
+Parser Excel      Regras de Score        Excel Export
+
+Parser PDF        Fuzzy Matching
+
+SCI Parser        IA futura
+
+ |
+ |
+PostgreSQL
+```
+
+---
+
+# Componentes detalhados
+
+## 1. File Manager Service
+
+Responsável por:
+
+* upload;
+* armazenamento;
+* controle de versões.
+
+Tabela:
+
+```
+arquivo_importado
+```
+
+---
+
+## 2. ETL Engine
+
+Esse é o núcleo inicial.
+
+Responsável por transformar:
+
+Formato origem:
+
+```
+Banco Inter
+SCI
+ERP Construtora
+```
+
+Em:
+
+```
+Modelo Canônico
+```
+
+---
+
+Exemplo:
+
+Antes:
+
+Banco:
+
+```
+Pix enviado:
+Cp :60701190-UP ESQUADRIAS
+
+-R$132500
+```
+
+Depois:
+
+```json
+{
+ "tipo":"SAIDA",
+ "fornecedor":"UP ESQUADRIAS",
+ "valor":132500,
+ "data":"2026-06-05"
+}
+```
+
+---
+
+# 3. Modelo Canônico
+
+Esse conceito é fundamental para vender o projeto.
+
+O cliente hoje tem:
+
+```
+Construtora A
+      |
+      ERP A
+
+Construtora B
+      |
+      ERP B
+
+Construtora C
+      |
+      ERP C
+```
+
+Problema:
+
+Cada um fala uma língua.
+
+A solução cria:
+
+```
+ERP A
+   \
+ERP B ---- MODELO PADRÃO ---- CONTABILIDADE
+   /
+ERP C
+```
+
+---
+
+# UML 3 — Diagrama de Sequência
+
+## Processo completo
+
+### Cenário:
+
+Importação mensal de junho.
+
+---
+
+Usuário:
+
+```
+Analista Contábil
+```
+
+faz:
+
+```
+Upload Despesas.xlsx
+```
+
+↓
+
+Sistema:
+
+```
+Arquivo recebido
+```
+
+↓
+
+Validação:
+
+```
+Formato OK?
+```
+
+↓
+
+Parser:
+
+```
+Extrair registros
+```
+
+↓
+
+Normalização:
+
+```
+Fornecedor
+Data
+Valor
+Projeto
+```
+
+↓
+
+Banco:
+
+Salvar:
+
+```
+Despesa
+Parcela
+Fornecedor
+Projeto
+```
+
+---
+
+Depois:
+
+Upload:
+
+```
+Extrato Bancário
+```
+
+↓
+
+Parser:
+
+Extrai:
+
+```
+Movimentação Bancária
+```
+
+↓
+
+Depois:
+
+Upload:
+
+```
+Razão SCI
+```
+
+↓
+
+Parser:
+
+Extrai:
+
+```
+Lançamento Contábil
+```
+
+---
+
+Finalmente:
+
+Motor:
+
+```
+Executar Matching
+```
+
+Resultado:
+
+```
+Conciliacao
+```
+
+---
+
+# UML 4 — Modelo Entidade Relacionamento Inicial
+
+Agora o banco.
+
+## Empresa
+
+```
+empresa
+
+id
+razao_social
+cnpj
+```
+
+Relacionamento:
+
+1:N
+
+---
+
+## Projeto
+
+```
+projeto
+
+id
+codigo
+nome
+```
+
+Exemplo:
+
+```
+PROJ02
+Casa Bioma
+```
+
+---
+
+## Fornecedor
+
+```
+fornecedor
+
+id
+
+nome_original
+
+nome_normalizado
+
+documento
+```
+
+---
+
+## Despesa
+
+```
+despesa
+
+id_origem
+
+fornecedor_id
+
+projeto_id
+
+valor_total
+
+status
+```
+
+Relacionamento:
+
+```
+Despesa
+   |
+   |
+1:N
+   |
+Parcela
+```
+
+---
+
+## Parcela
+
+```
+parcela_despesa
+
+id_origem
+
+despesa_id
+
+valor
+
+data_pagamento
+
+forma_pagamento
+```
+
+---
+
+## Movimento Bancário
+
+```
+movimento_bancario
+
+id
+
+data
+
+descricao
+
+valor
+
+tipo_operacao
+```
+
+---
+
+## Lançamento Contábil
+
+```
+lancamento_contabil
+
+id
+
+chave_sci
+
+historico
+
+debito
+
+credito
+
+contra
+```
+
+---
+
+## Conciliação
+
+A entidade mais importante.
+
+```
+conciliacao
+
+id
+
+despesa_id
+
+movimento_bancario_id
+
+lancamento_contabil_id
+
+score
+
+status
+```
+
+---
+
+# Status possíveis
+
+```text
+PENDENTE
+
+CONCILIADO_AUTOMATICO
+
+CONCILIADO_MANUAL
+
+DIVERGENTE
+
+IGNORADO
+```
+
+---
+
+# Observação estratégica importante
+
+Nesse ponto aparece uma oportunidade comercial.
+
+Você não está criando "um importador de planilhas".
+
+Isso seria pequeno.
+
+Você está criando:
+
+## Uma camada de integração contábil para empresas de construção civil.
+
+O diferencial:
+
+* cada construtora continua usando seu ERP;
+* a contabilidade não precisa trocar de sistema;
+* sua plataforma faz a tradução;
+* a inteligência fica centralizada.
+
+---
+
+# Próximos documentos técnicos recomendados
+
+Agora que o UML base está definido, a sequência correta seria:
+
+## Documento 02 — Arquitetura de Software
+
+Detalhar:
+
+* Backend;
+* Frontend;
+* Banco;
+* Containers;
+* Segurança;
+* Deploy Railway;
+* CI/CD GitHub Actions.
+
+Depois:
+
+## Documento 03 — Requisitos Funcionais
+
+Exemplo:
+
+RF001:
+O sistema deve permitir upload de arquivos.
+
+RF002:
+O sistema deve identificar automaticamente o tipo de arquivo.
+
+RF003:
+O sistema deve gerar conciliação automática.
+
+---
+
+## Documento 04 — Requisitos Não Funcionais
+
+Exemplo:
+
+RNF001:
+Sistema deve suportar múltiplas empresas.
+
+RNF002:
+Dados devem possuir rastreabilidade.
+
+RNF003:
+Nenhum arquivo original pode ser perdido.
+
+---
+
+Minha recomendação de arquitetura: **não iniciar pelo dashboard**. O MVP deve começar pelo pipeline:
+
+**Upload → Parser → Modelo Canônico → Matching → Relatório**
+
+Esse é o núcleo que prova valor ao cliente.
+
+O próximo passo será criar o **Documento de Arquitetura de Software (DAS)** já alinhado com sua stack Python + React + PostgreSQL + Docker + Railway + GitHub Actions.

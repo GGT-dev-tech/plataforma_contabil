@@ -1,0 +1,294 @@
+from sqlalchemy import Column, Integer, String, Date, Numeric, Boolean, Enum, ForeignKey, UniqueConstraint, DateTime, Text, Float
+from sqlalchemy.orm import relationship
+from sqlalchemy.dialects.postgresql import UUID
+from datetime import date, datetime
+import enum
+import uuid
+from .base import AuditableBase
+
+class Role(str, enum.Enum):
+    ADMIN = "ADMIN"
+    ANALISTA = "ANALISTA"
+    AUDITOR = "AUDITOR"
+
+class Usuario(AuditableBase):
+    __tablename__ = 'usuarios'
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    email = Column(String(255), unique=True, index=True)
+    hashed_password = Column(String(255))
+    nome = Column(String(255))
+    role = Column(Enum(Role), default=Role.ANALISTA)
+    is_active = Column(Boolean, default=True)
+
+class Empresa(AuditableBase):
+    __tablename__ = 'empresas'
+    cnpj = Column(String, unique=True, index=True)
+    razao_social = Column(String)
+    nome_fantasia = Column(String)
+
+class ContaBancaria(AuditableBase):
+    __tablename__ = 'contas_bancarias'
+    empresa_id = Column(UUID(as_uuid=True), ForeignKey('empresas.id'))
+    banco = Column(String)
+    agencia = Column(String)
+    conta = Column(String)
+    tipo = Column(String)
+    
+    empresa = relationship("Empresa")
+
+class ContaContabil(AuditableBase):
+    __tablename__ = 'contas_contabeis'
+    empresa_id = Column(UUID(as_uuid=True), ForeignKey('empresas.id'))
+    codigo_contabil = Column(String, index=True)
+    descricao = Column(String)
+    natureza = Column(String) # D ou C
+
+class Fornecedor(AuditableBase):
+    __tablename__ = 'fornecedores'
+    cnpj_cpf = Column(String, index=True)
+    nome = Column(String)
+    nome_normalizado = Column(String, index=True)
+
+class Projeto(AuditableBase):
+    __tablename__ = 'projetos'
+    empresa_id = Column(UUID(as_uuid=True), ForeignKey('empresas.id'))
+    nome = Column(String)
+    codigo_externo = Column(String, index=True)
+
+class CategoriaFinanceira(AuditableBase):
+    __tablename__ = 'categorias_financeiras'
+    nome = Column(String)
+
+class ExtratoBancario(AuditableBase):
+    __tablename__ = 'extratos_bancarios'
+    conta_bancaria_id = Column(UUID(as_uuid=True), ForeignKey('contas_bancarias.id'))
+    data_inicio = Column(Date)
+    data_fim = Column(Date)
+    saldo_inicial = Column(Numeric(15, 2))
+    saldo_final = Column(Numeric(15, 2))
+
+class TipoMovimentacao(str, enum.Enum):
+    D = "DEBITO"
+    C = "CREDITO"
+
+class MovimentacaoBancaria(AuditableBase):
+    __tablename__ = 'movimentacoes_bancarias'
+    extrato_id = Column(UUID(as_uuid=True), ForeignKey('extratos_bancarios.id'))
+    data = Column(Date, index=True)
+    historico = Column(String)
+    descricao_original = Column(String)
+    valor = Column(Numeric(15, 2))
+    tipo = Column(Enum(TipoMovimentacao))
+    codigo_cp = Column(String, index=True) # External ID from Inter
+    linha_origem = Column(Integer)
+
+class Despesa(AuditableBase):
+    __tablename__ = 'despesas'
+    fornecedor_id = Column(UUID(as_uuid=True), ForeignKey('fornecedores.id'))
+    projeto_id = Column(UUID(as_uuid=True), ForeignKey('projetos.id'), nullable=True)
+    categoria_id = Column(UUID(as_uuid=True), ForeignKey('categorias_financeiras.id'), nullable=True)
+    valor_total = Column(Numeric(15, 2))
+    data_emissao = Column(Date)
+    id_uuid_origem = Column(String, index=True) # External ID
+
+    fornecedor = relationship("Fornecedor")
+    parcelas = relationship("ParcelaDespesa", back_populates="despesa")
+
+class ParcelaDespesa(AuditableBase):
+    __tablename__ = 'parcelas_despesa'
+    despesa_id = Column(UUID(as_uuid=True), ForeignKey('despesas.id'))
+    numero_parcela = Column(Integer)
+    valor = Column(Numeric(15, 2))
+    data_vencimento = Column(Date)
+    data_pagamento_esperada = Column(Date, nullable=True)
+    id_parcela_origem = Column(String, index=True) # External ID
+
+    despesa = relationship("Despesa", back_populates="parcelas")
+    pagamentos = relationship("Pagamento", back_populates="parcela")
+
+class Pagamento(AuditableBase):
+    __tablename__ = 'pagamentos'
+    parcela_id = Column(UUID(as_uuid=True), ForeignKey('parcelas_despesa.id'))
+    movimentacao_id = Column(UUID(as_uuid=True), ForeignKey('movimentacoes_bancarias.id'), nullable=True)
+    valor_pago = Column(Numeric(15, 2))
+    juros = Column(Numeric(15, 2), default=0)
+    desconto = Column(Numeric(15, 2), default=0)
+    data_pagamento = Column(Date)
+
+    parcela = relationship("ParcelaDespesa", back_populates="pagamentos")
+    movimentacao = relationship("MovimentacaoBancaria")
+
+class DocumentoFiscal(AuditableBase):
+    __tablename__ = 'documentos_fiscais'
+    parcela_id = Column(UUID(as_uuid=True), ForeignKey('parcelas_despesa.id'))
+    numero_nf = Column(String)
+    chave_acesso = Column(String)
+    valor_nf = Column(Numeric(15, 2))
+
+class LancamentoContabil(AuditableBase):
+    __tablename__ = 'lancamentos_contabeis'
+    conta_contabil_id = Column(UUID(as_uuid=True), ForeignKey('contas_contabeis.id'))
+    data = Column(Date, index=True)
+    historico = Column(String)
+    valor = Column(Numeric(15, 2))
+    tipo = Column(Enum(TipoMovimentacao))
+    lote = Column(String)
+    chave_origem_sci = Column(String, index=True) # External ID
+    conta_contrapartida = Column(String)
+    
+    conta_contabil = relationship("ContaContabil")
+
+class TipoArquivo(str, enum.Enum):
+    DESPESA = "DESPESA"
+    EXTRATO = "EXTRATO"
+    RAZAO = "RAZAO"
+
+class StatusExecucao(str, enum.Enum):
+    CRIADA = "CRIADA"
+    ARQUIVOS_ANEXADOS = "ARQUIVOS_ANEXADOS"
+    PROCESSANDO = "PROCESSANDO"
+    CONCLUIDA = "CONCLUIDA"
+    ERRO = "ERRO"
+
+class ExecucaoPipeline(AuditableBase):
+    __tablename__ = "execucoes_pipeline"
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    status = Column(Enum(StatusExecucao), default=StatusExecucao.CRIADA, nullable=False)
+    
+    # Inputs/Config
+    matching_profile = Column(String(100))
+    runtime_profile = Column(String(100))
+    
+    # Analytics / Relatório
+    data_inicio = Column(DateTime, default=datetime.utcnow)
+    data_fim = Column(DateTime, nullable=True)
+    duracao_ms = Column(Float, nullable=True)
+    hashes_arquivos = Column(Text, nullable=True) # Salvo como string de JSON
+    
+    # Erro de Job
+    erro_codigo = Column(String(100), nullable=True)
+    erro_mensagem = Column(Text, nullable=True)
+    erro_stacktrace = Column(Text, nullable=True)
+
+class ImportacaoArquivo(AuditableBase):
+    __tablename__ = 'importacoes_arquivo'
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    execucao_id = Column(String(36), ForeignKey('execucoes_pipeline.id'), nullable=False)
+    nome_original = Column(String, nullable=False)
+    tipo = Column(Enum(TipoArquivo), nullable=False)
+    
+    storage_path = Column(String, nullable=False)
+    hash_sha256 = Column(String, nullable=False)
+    tamanho_bytes = Column(Integer, nullable=False)
+    
+    uploaded_by = Column(String(100), nullable=True) # ID do Usuário
+    uploaded_at = Column(DateTime, default=datetime.utcnow)
+    
+    execucao = relationship("ExecucaoPipeline")
+
+class StatusConciliacao(str, enum.Enum):
+    PENDENTE = "PENDENTE"
+    APROVADO = "APROVADO"
+    REJEITADO = "REJEITADO"
+
+class TipoMatch(str, enum.Enum):
+    UM_PARA_UM = "1:1"
+    UM_PARA_N = "1:N"
+    N_PARA_UM = "N:1"
+    N_PARA_M = "N:M"
+
+class Conciliacao(AuditableBase):
+    __tablename__ = "conciliacoes"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    status = Column(Enum(StatusConciliacao), nullable=False)
+    tipo_match = Column(Enum(TipoMatch), nullable=False)
+    score_match = Column(Integer, nullable=True) # 0 a 100
+    regra_utilizada = Column(String(100), nullable=True) # ex: "ValueAndDateRule"
+    
+    # Auditabilidade e Versionamento
+    matching_profile = Column(String(100), nullable=True) # ex: financeiro_2026
+    explainability_version = Column(String(50), nullable=True) # ex: 1.0.0
+    
+    data_criacao = Column(DateTime, default=datetime.utcnow)
+    data_aprovacao = Column(DateTime, nullable=True)
+    aprovado_por = Column(String(100), nullable=True)
+    observacoes = Column(Text, nullable=True)
+
+    # Relacionamentos
+    itens = relationship("ConciliacaoItem", back_populates="conciliacao", cascade="all, delete-orphan")
+    explicacoes = relationship("ConciliacaoExplicacao", back_populates="conciliacao", cascade="all, delete-orphan")
+
+class ConciliacaoItem(AuditableBase):
+    __tablename__ = "conciliacoes_itens"
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    conciliacao_id = Column(String(36), ForeignKey("conciliacoes.id"), nullable=False)
+    
+    # Entidades vinculadas (todas opcionais, pois depende do lado do match)
+    parcela_id = Column(String(36), ForeignKey("parcelas_despesa.id"), nullable=True)
+    movimentacao_id = Column(String(36), ForeignKey("movimentacoes_bancarias.id"), nullable=True)
+    lancamento_id = Column(String(36), ForeignKey("lancamentos_contabeis.id"), nullable=True)
+
+    # Relacionamentos
+    conciliacao = relationship("Conciliacao", back_populates="itens")
+    parcela = relationship("ParcelaDespesa")
+    movimentacao = relationship("MovimentacaoBancaria")
+    lancamento = relationship("LancamentoContabil")
+
+class ConciliacaoExplicacao(AuditableBase):
+    __tablename__ = "conciliacao_explicacoes"
+    
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    conciliacao_id = Column(String(36), ForeignKey("conciliacoes.id"), nullable=False)
+    regra = Column(String(100), nullable=False)
+    score = Column(Float, nullable=False)
+    peso = Column(Float, nullable=False)
+    confidence = Column(Float, nullable=False)
+    justificativa = Column(Text, nullable=False)
+    
+    # Auditabilidade e Versionamento
+    matching_profile = Column(String(100), nullable=True)
+    explainability_version = Column(String(50), nullable=True)
+    
+    conciliacao = relationship("Conciliacao", back_populates="explicacoes")
+
+class StatusCandidato(str, enum.Enum):
+    PENDENTE_REVISAO = "PENDENTE_REVISAO"
+    REJEITADO_PELO_MOTOR = "REJEITADO_PELO_MOTOR"
+    APROVADO = "APROVADO"
+
+class MatchCandidate(AuditableBase):
+    """Representa um candidato avaliado pelo motor antes da decisão final"""
+    __tablename__ = "match_candidates"
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    execucao_id = Column(String(36), ForeignKey("execucoes_pipeline.id"), nullable=False)
+    movimentacao_id = Column(UUID(as_uuid=True), ForeignKey('movimentacoes_bancarias.id'), nullable=False)
+    parcela_id = Column(UUID(as_uuid=True), ForeignKey('parcelas_despesa.id'), nullable=True)
+    
+    score_total = Column(Float, nullable=False)
+    status = Column(Enum(StatusCandidato), nullable=False)
+    motivo_descarte = Column(Text, nullable=True)
+    
+    # A auditoria completa baseada em snapshot de score/rules 
+    explanation_snapshot = Column(Text, nullable=True) # Salvo como string de JSON
+    
+    # Decisão Humana
+    reviewed_by = Column(String(36), ForeignKey("usuarios.id"), nullable=True)
+    reviewed_at = Column(DateTime, nullable=True)
+    decision_comment = Column(Text, nullable=True)
+    
+    execucao = relationship("ExecucaoPipeline")
+    movimentacao = relationship("MovimentacaoBancaria")
+    parcela = relationship("ParcelaDespesa")
+    revisor = relationship("Usuario")
+
+class CandidateEvaluationLog(AuditableBase):
+    """Analytics Data para o topo do funil, representando quem nunca foi candidato (ex: filtro de data)"""
+    __tablename__ = "candidate_evaluation_log"
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    execucao_id = Column(String(36), ForeignKey("execucoes_pipeline.id"), nullable=False)
+    movimentacao_id = Column(UUID(as_uuid=True), ForeignKey('movimentacoes_bancarias.id'), nullable=False)
+    parcela_id = Column(UUID(as_uuid=True), ForeignKey('parcelas_despesa.id'), nullable=True)
+    
+    motivo_descarte = Column(String(255), nullable=False) # Ex: "Data fora da janela (+-10 dias)"
