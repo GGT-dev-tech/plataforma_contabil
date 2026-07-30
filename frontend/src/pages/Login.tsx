@@ -23,7 +23,8 @@ export const Login: React.FC = () => {
       formData.append('username', email);
       formData.append('password', password);
       
-      const response = await fetch('/api/v1/auth/login', {
+      const baseUrl = import.meta.env.VITE_API_URL || '/api/v1';
+      const response = await fetch(`${baseUrl}/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded'
