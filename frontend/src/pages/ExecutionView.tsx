@@ -7,7 +7,7 @@ import { ConciliationsTab } from './ExecutionTabs/ConciliationsTab';
 import { DivergenciesTab } from './ExecutionTabs/DivergenciesTab';
 import { TimelineTab } from './ExecutionTabs/TimelineTab';
 import { StatusBadge } from '../components/ui/StatusBadge';
-import { Tabs } from '../components/ui/Tabs';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '../components/ui/Tabs';
 import { PageHeader } from '../components/layout/PageHeader';
 import { Breadcrumb } from '../components/layout/Breadcrumb';
 import { Loading } from '../components/ui/Loading';
@@ -18,14 +18,6 @@ export const ExecutionView: React.FC = () => {
 
   if (isLoading) return <Loading text="Carregando execução..." fullScreen />;
   if (error || !execution) return <div className="text-red-500 p-4">Erro ao carregar a execução.</div>;
-
-  const tabItems = [
-    { id: 'summary', label: 'Resumo', content: <SummaryTab executionId={id!} /> },
-    { id: 'pending', label: 'Pendentes', content: <PendingTab executionId={id!} /> },
-    { id: 'conciliations', label: 'Conciliados', content: <ConciliationsTab executionId={id!} /> },
-    { id: 'divergencies', label: 'Divergências', content: <DivergenciesTab executionId={id!} /> },
-    { id: 'timeline', label: 'Timeline', content: <TimelineTab executionId={id!} /> }
-  ];
 
   return (
     <div className="space-y-6">
@@ -42,7 +34,21 @@ export const ExecutionView: React.FC = () => {
       />
 
       <div className="bg-white/50 dark:bg-gray-800/50 backdrop-blur-md rounded-2xl border border-gray-200/50 dark:border-gray-700/50 p-6 shadow-sm">
-        <Tabs tabs={tabItems} defaultTab="summary" />
+        <Tabs defaultValue="summary" className="w-full">
+          <TabsList className="mb-4">
+            <TabsTrigger value="summary">Resumo</TabsTrigger>
+            <TabsTrigger value="pending">Pendentes</TabsTrigger>
+            <TabsTrigger value="conciliations">Conciliados</TabsTrigger>
+            <TabsTrigger value="divergencies">Divergências</TabsTrigger>
+            <TabsTrigger value="timeline">Timeline</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="summary"><SummaryTab executionId={id!} /></TabsContent>
+          <TabsContent value="pending"><PendingTab executionId={id!} /></TabsContent>
+          <TabsContent value="conciliations"><ConciliationsTab executionId={id!} /></TabsContent>
+          <TabsContent value="divergencies"><DivergenciesTab executionId={id!} /></TabsContent>
+          <TabsContent value="timeline"><TimelineTab executionId={id!} /></TabsContent>
+        </Tabs>
       </div>
     </div>
   );

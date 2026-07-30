@@ -1,5 +1,6 @@
 import React from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { Button } from './Button';
 
 interface PaginationProps {
   currentPage: number;
@@ -13,20 +14,21 @@ export const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages,
   return (
     <div className="flex items-center justify-between px-4 py-3 sm:px-6">
       <div className="flex flex-1 justify-between sm:hidden">
-        <button
+        <Button
+          variant="outline"
           onClick={() => onPageChange(currentPage - 1)}
           disabled={currentPage === 1}
-          className="relative inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
         >
           Anterior
-        </button>
-        <button
+        </Button>
+        <Button
+          variant="outline"
           onClick={() => onPageChange(currentPage + 1)}
           disabled={currentPage === totalPages}
-          className="relative ml-3 inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+          className="ml-3"
         >
           Próxima
-        </button>
+        </Button>
       </div>
       <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
         <div>
@@ -35,23 +37,25 @@ export const Pagination: React.FC<PaginationProps> = ({ currentPage, totalPages,
           </p>
         </div>
         <div>
-          <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
-            <button
+          <nav className="isolate inline-flex space-x-2 rounded-md" aria-label="Pagination">
+            <Button
+              variant="outline"
+              size="icon"
               onClick={() => onPageChange(currentPage - 1)}
               disabled={currentPage === 1}
-              className="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 dark:ring-gray-600 dark:hover:bg-gray-800 focus:z-20 focus:outline-offset-0 disabled:opacity-50"
             >
               <span className="sr-only">Anterior</span>
               <ChevronLeft className="h-5 w-5" aria-hidden="true" />
-            </button>
-            <button
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
               onClick={() => onPageChange(currentPage + 1)}
               disabled={currentPage === totalPages}
-              className="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 dark:ring-gray-600 dark:hover:bg-gray-800 focus:z-20 focus:outline-offset-0 disabled:opacity-50"
             >
               <span className="sr-only">Próxima</span>
               <ChevronRight className="h-5 w-5" aria-hidden="true" />
-            </button>
+            </Button>
           </nav>
         </div>
       </div>

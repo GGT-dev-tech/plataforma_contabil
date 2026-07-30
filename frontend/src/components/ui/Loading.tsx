@@ -1,5 +1,6 @@
 import React from 'react';
 import { Loader2 } from 'lucide-react';
+import { cn } from '../../utils/cn';
 
 interface LoadingProps {
   text?: string;
@@ -25,12 +26,11 @@ export const Loading: React.FC<LoadingProps> = ({ text = 'Carregando...', fullSc
   return content;
 };
 
-interface SkeletonProps {
-  className?: string;
-}
+interface SkeletonProps extends React.HTMLAttributes<HTMLDivElement> {}
 
-export const Skeleton: React.FC<SkeletonProps> = ({ className = '' }) => {
+export const Skeleton = React.forwardRef<HTMLDivElement, SkeletonProps>(({ className, ...props }, ref) => {
   return (
-    <div className={`animate-pulse bg-gray-200 dark:bg-gray-700 rounded-md ${className}`}></div>
+    <div ref={ref} className={cn("animate-pulse rounded-md bg-gray-200/50 dark:bg-gray-800/50", className)} {...props} />
   );
-};
+});
+Skeleton.displayName = "Skeleton";

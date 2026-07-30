@@ -25,7 +25,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
       footer={
         <>
           <Button variant="ghost" onClick={onClose}>{cancelLabel}</Button>
-          <Button variant={isDestructive ? 'danger' : 'primary'} onClick={() => { onConfirm(); onClose(); }}>{confirmLabel}</Button>
+          <Button variant={isDestructive ? 'destructive' : 'default'} onClick={() => { onConfirm(); onClose(); }}>{confirmLabel}</Button>
         </>
       }
     >

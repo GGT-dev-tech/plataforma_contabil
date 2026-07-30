@@ -6,7 +6,7 @@ import { GlassCard } from '../components/ui/GlassCard';
 import { GlassPanel } from '../components/ui/GlassPanel';
 import { Badge } from '../components/ui/Badge';
 import { StatusBadge } from '../components/ui/StatusBadge';
-import { Tabs } from '../components/ui/Tabs';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '../components/ui/Tabs';
 import { Modal } from '../components/ui/Modal';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { Loading, Skeleton } from '../components/ui/Loading';
@@ -51,9 +51,9 @@ export const Showcase: React.FC = () => {
       <section>
         <h2 className="text-xl font-bold mb-4 border-b pb-2">1. Buttons</h2>
         <div className="flex gap-4 flex-wrap">
-          <Button variant="primary">Primary</Button>
+          <Button variant="default">Primary</Button>
           <Button variant="secondary">Secondary</Button>
-          <Button variant="danger">Danger</Button>
+          <Button variant="destructive">Danger</Button>
           <Button variant="ghost">Ghost</Button>
           <Button isLoading>Loading</Button>
           <Button leftIcon={<CheckCircle2 className="w-4 h-4" />}>Com Ícone</Button>
@@ -73,8 +73,8 @@ export const Showcase: React.FC = () => {
       <section>
         <h2 className="text-xl font-bold mb-4 border-b pb-2">3. Inputs & Search</h2>
         <div className="max-w-md space-y-4">
-          <Input label="Email Address" placeholder="voce@exemplo.com" />
-          <Input label="Com Erro" error="Este campo é obrigatório" />
+          <Input placeholder="voce@exemplo.com" />
+          <Input error />
           <SearchInput placeholder="Buscar transações..." />
         </div>
       </section>
@@ -85,8 +85,9 @@ export const Showcase: React.FC = () => {
           <Badge>Default</Badge>
           <Badge variant="success">Success</Badge>
           <Badge variant="warning">Warning</Badge>
-          <Badge variant="error">Error</Badge>
-          <Badge variant="info">Info</Badge>
+          <Badge variant="destructive">Error</Badge>
+          <Badge variant="secondary">Secondary</Badge>
+          <Badge variant="glass">Glass</Badge>
           <div className="border-l pl-4 flex gap-4">
             <StatusBadge status="CONCLUIDA" />
             <StatusBadge status="PENDENTE_REVISAO" />
@@ -115,20 +116,26 @@ export const Showcase: React.FC = () => {
       </section>
 
       <section>
-        <h2 className="text-xl font-bold mb-4 border-b pb-2">6. Tabs</h2>
-        <Tabs 
-          tabs={[
-            { id: 't1', label: 'Dashboard', content: <div className="p-4 glass rounded-lg">Conteúdo 1</div> },
-            { id: 't2', label: 'Configurações', content: <div className="p-4 glass rounded-lg">Conteúdo 2</div> }
-          ]} 
-        />
+        <h2 className="text-xl font-bold mb-4 border-b pb-2">6. Tabs (Radix)</h2>
+        <Tabs defaultValue="t1" className="w-full max-w-md">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="t1">Dashboard</TabsTrigger>
+            <TabsTrigger value="t2">Configurações</TabsTrigger>
+          </TabsList>
+          <TabsContent value="t1" className="p-4 glass rounded-lg mt-2">
+            Conteúdo 1
+          </TabsContent>
+          <TabsContent value="t2" className="p-4 glass rounded-lg mt-2">
+            Conteúdo 2
+          </TabsContent>
+        </Tabs>
       </section>
 
       <section>
         <h2 className="text-xl font-bold mb-4 border-b pb-2">7. Modals & Dialogs</h2>
         <div className="flex gap-4">
           <Button onClick={() => setIsModalOpen(true)}>Abrir Modal Simples</Button>
-          <Button variant="danger" onClick={() => setIsConfirmOpen(true)}>Abrir Confirm Dialog</Button>
+          <Button variant="destructive" onClick={() => setIsConfirmOpen(true)}>Abrir Confirm Dialog</Button>
         </div>
         
         <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Detalhes da Transação" footer={<Button onClick={() => setIsModalOpen(false)}>Fechar</Button>}>

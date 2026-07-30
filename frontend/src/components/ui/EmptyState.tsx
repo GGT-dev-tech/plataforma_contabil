@@ -33,7 +33,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
         </p>
       )}
       {actionLabel && onAction && (
-        <Button onClick={onAction} variant="primary">
+        <Button onClick={onAction} variant="default">
           {actionLabel}
         </Button>
       )}
