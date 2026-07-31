@@ -1,4 +1,6 @@
-import { LayoutDashboard, Settings, Users, Receipt, Landmark, FileSpreadsheet, CheckCheck } from 'lucide-react';
+import React from 'react';
+import { NavLink } from 'react-router-dom';
+import { Settings, Users, Receipt, Landmark, FileSpreadsheet, CheckCheck } from 'lucide-react';
 
 export const Sidebar: React.FC = () => {
   const navItemClass = ({ isActive }: { isActive: boolean }) => `

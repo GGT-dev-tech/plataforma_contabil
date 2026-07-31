@@ -1,10 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { 
-  Download, Upload, Play, Trash2, Edit3, Save, Plus, 
-  FileSpreadsheet, ArrowLeft, CheckCircle2, DollarSign, RefreshCw 
-} from 'lucide-react';
-import api from '../services/api';
+import { Download, Play, Trash2, Edit3, Save, RefreshCw } from 'lucide-react';
+import { apiClient as api } from '../services/api';
 import { GlassPanel } from '../components/ui/GlassPanel';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
@@ -100,10 +97,10 @@ export const StagingGrid: React.FC = () => {
   const getTipoBadge = (tipo: string) => {
     switch (tipo) {
       case 'RECEITA': return <Badge variant="success">Receita</Badge>;
-      case 'DESPESA': return <Badge variant="danger">Despesa</Badge>;
-      case 'EXTRATO': return <Badge variant="info">Extrato Bancário</Badge>;
+      case 'DESPESA': return <Badge variant="destructive">Despesa</Badge>;
+      case 'EXTRATO': return <Badge variant="secondary">Extrato Bancário</Badge>;
       case 'DINHEIRO': return <Badge variant="warning">Dinheiro (Caixa)</Badge>;
-      default: return <Badge variant="neutral">{tipo}</Badge>;
+      default: return <Badge variant="outline">{tipo}</Badge>;
     }
   };
 
@@ -114,21 +111,22 @@ export const StagingGrid: React.FC = () => {
       <PageHeader 
         title="Área de Revisão Interativa (Staging CRUD)" 
         description="Confira, edite ou adicione movimentações e contas antes de calcular a conciliação 3-Way e os impostos."
-      >
-        <div className="flex gap-3">
-          <Button variant="outline" onClick={handleDownloadTemplate} icon={Download}>
-            Baixar Modelo Padrão .xlsx
-          </Button>
-          <Button 
-            onClick={handleProcessStaging} 
-            isLoading={processing} 
-            disabled={items.length === 0 || processing}
-            icon={Play}
-          >
-            Salvar e Calcular Conciliação
-          </Button>
-        </div>
-      </PageHeader>
+        action={
+          <div className="flex gap-3">
+            <Button variant="outline" onClick={handleDownloadTemplate} leftIcon={<Download className="w-4 h-4" />}>
+              Baixar Modelo Padrão .xlsx
+            </Button>
+            <Button 
+              onClick={handleProcessStaging} 
+              isLoading={processing} 
+              disabled={items.length === 0 || processing}
+              leftIcon={<Play className="w-4 h-4" />}
+            >
+              Salvar e Calcular Conciliação
+            </Button>
+          </div>
+        }
+      />
 
       {/* Tabs Filter */}
       <div className="flex space-x-2 border-b border-gray-200 dark:border-gray-700/50 pb-2">
