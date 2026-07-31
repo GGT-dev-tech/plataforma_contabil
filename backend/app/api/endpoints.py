@@ -252,7 +252,7 @@ def review_candidate(id: str, decision: schemas.DecisionRequest, db: Session = D
         cand.status = StatusCandidato.APROVADO
         profile = load_matching_profile()
         engine = SuggestionEngine(db, profile['matching_profile'], profile['version'])
-        engine.persist_match(score=cand.score_total, status=StatusConciliacao.APROVADO, mov_id=str(cand.movimentacao_id), parcela_id=str(cand.parcela_id) if cand.parcela_id else None, lanc_id=None, regras_json=json.loads(cand.explanation_snapshot) if cand.explanation_snapshot else [])
+        engine.persist_match(score=cand.score_total, status=StatusConciliacao.APROVADO, mov_id=str(cand.movimentacao_id), parcela_id=str(cand.parcela_id) if cand.parcela_id else None, lanc_id=str(cand.lancamento_id) if cand.lancamento_id else None, regras_json=json.loads(cand.explanation_snapshot) if cand.explanation_snapshot else [])
     elif decision.action == "REJEITAR":
         cand.status = StatusCandidato.REJEITADO_PELO_MOTOR 
     else:

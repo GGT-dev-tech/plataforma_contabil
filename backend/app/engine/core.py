@@ -143,12 +143,17 @@ class SuggestionEngine:
         self.profile_name = profile_name
         self.profile_version = profile_version
 
+    def _to_uuid(self, val):
+        if val is None: return None
+        if isinstance(val, uuid.UUID): return val
+        return uuid.UUID(str(val))
+
     def persist_match(
         self, score: float, 
         status: StatusConciliacao, 
-        mov_id: str, 
-        parcela_id: Optional[str], 
-        lanc_id: Optional[str],
+        mov_id: Any, 
+        parcela_id: Optional[Any], 
+        lanc_id: Optional[Any],
         regras_json: List[dict]
     ) -> Conciliacao:
         conciliacao = Conciliacao(
@@ -165,9 +170,9 @@ class SuggestionEngine:
         item = ConciliacaoItem(
             id=str(uuid.uuid4()),
             conciliacao_id=conciliacao.id,
-            parcela_id=parcela_id,
-            movimentacao_id=mov_id,
-            lancamento_id=lanc_id
+            parcela_id=self._to_uuid(parcela_id),
+            movimentacao_id=self._to_uuid(mov_id),
+            lancamento_id=self._to_uuid(lanc_id)
         )
         self.db.add(item)
         
@@ -178,7 +183,7 @@ class SuggestionEngine:
                 regra=rule['nome'],
                 score=rule['score'],
                 peso=rule['peso'],
-                confidence=rule.get('confidence', 1.0), # Assuming default 1.0 if missing
+                confidence=rule.get('confidence', 1.0),
                 justificativa=rule['justificativa'],
                 matching_profile=self.profile_name,
                 explainability_version=self.profile_version
@@ -245,8 +250,8 @@ class MatchOrchestrator:
         }
         
         for mov in movs_pendentes:
-            candidatos_avaliados = self.candidate_gen.get_candidates_for_movimentacao(mov, parcelas)
-            stats["candidatos_avaliados"] += len([c for c in candidatos_avaliados if c[1] is None])
+            candidatos_avaliados = self.candidate_gen.get_candidates_for_movimentacao(mov, parcelas, lancamentos)
+            stats["candidatos_avaliados"] += len([c for c in candidatos_avaliados if c[2] is None])
             
             best_score = 0.0
             best_candidate = None
@@ -254,40 +259,41 @@ class MatchOrchestrator:
             best_rules = []
             
             # Persistir descartes do generator no funil leve
-            for cand, motivo in candidatos_avaliados:
+            for p, l, motivo in candidatos_avaliados:
                 if motivo:
                     cel = CandidateEvaluationLog(
-                        id=str(uuid.uuid4()), execucao_id=self.execucao.id, movimentacao_id=mov.id, parcela_id=cand.id,
+                        id=str(uuid.uuid4()), execucao_id=self.execucao.id, movimentacao_id=mov.id, 
+                        parcela_id=p.id if p else None, lancamento_id=l.id if l else None,
                         motivo_descarte=motivo
                     )
                     self.db.add(cel)
             
             # Avaliar válidos
-            valid_candidates = [c for c, m in candidatos_avaliados if m is None]
+            valid_candidates = [c for c in candidatos_avaliados if c[2] is None]
             candidatos_analisados = []
             
-            for cand in valid_candidates:
-                score, details, applied = self.scoring.score(cand, mov, None)
+            for p, l, _ in valid_candidates:
+                score, details, applied = self.scoring.score(p, mov, l)
                 regras_json = [{"nome": r.name, "score": d.score, "peso": d.weight, "confidence": d.confidence, "justificativa": d.reason} for r, d in zip(applied, details)]
                 candidatos_analisados.append({
-                    "cand": cand,
+                    "p": p, "l": l,
                     "score": score,
                     "regras_json": regras_json
                 })
                 
                 if score > best_score:
                     best_score = score
-                    best_candidate = cand
+                    best_candidate = (p, l)
                     best_details = details
                     best_rules = applied
 
             # Persistir os candidatos analisados pelo Scoring Engine
             for c in candidatos_analisados:
-                cand = c["cand"]
+                p, l = c["p"], c["l"]
                 score = c["score"]
                 regras_json = c["regras_json"]
                 
-                if cand == best_candidate and best_score > 0:
+                if (p, l) == best_candidate and best_score > 0:
                     status = self.decision.decide(best_score)
                     
                     if status == StatusConciliacao.APROVADO:
@@ -296,13 +302,13 @@ class MatchOrchestrator:
                         stats["matches_automaticos"] += 1
                         
                         # Criar conciliação oficial direto
-                        self.suggestion.persist_match(score, status, str(mov.id), str(cand.id), None, regras_json)
-                        parcelas.remove(cand)
+                        self.suggestion.persist_match(score, status, str(mov.id), str(p.id) if p else None, str(l.id) if l else None, regras_json)
+                        if p in parcelas: parcelas.remove(p)
                     elif status == StatusConciliacao.PENDENTE:
                         # Human review needed
                         mc_status = StatusCandidato.PENDENTE_REVISAO
                         stats["matches_revisao"] += 1
-                        parcelas.remove(cand) # Remove dos pendentes pra nao ser avaliado por outros, mas não aprova de fato
+                        if p in parcelas: parcelas.remove(p)
                     else:
                         mc_status = StatusCandidato.REJEITADO_PELO_MOTOR
                         motivo_descarte = f"Melhor score ({score:.2f}) não atingiu o threshold."
@@ -311,12 +317,12 @@ class MatchOrchestrator:
                     mc_status = StatusCandidato.REJEITADO_PELO_MOTOR
                     motivo_descarte = f"Score insuficiente ou menor que o vencedor ({best_score:.2f})"
                     self.candidates_discard_engine_log.append({
-                        "mov_id": str(mov.id), "parcela_id": str(cand.id), 
+                        "mov_id": str(mov.id), "parcela_id": str(p.id) if p else None, 
                         "motivo": motivo_descarte, "score": score
                     })
 
                 mc = MatchCandidate(
-                    id=str(uuid.uuid4()), execucao_id=self.execucao.id, movimentacao_id=mov.id, parcela_id=cand.id,
+                    id=str(uuid.uuid4()), execucao_id=self.execucao.id, movimentacao_id=mov.id, parcela_id=p.id if p else None, lancamento_id=l.id if l else None,
                     score_total=score, status=mc_status, motivo_descarte=motivo_descarte if mc_status == StatusCandidato.REJEITADO_PELO_MOTOR else None,
                     explanation_snapshot=json.dumps(regras_json)
                 )
@@ -326,7 +332,7 @@ class MatchOrchestrator:
                 if mc_status in (StatusCandidato.APROVADO, StatusCandidato.PENDENTE_REVISAO):
                     self.reconciliation_log.append({
                         "mov_id": str(mov.id), "mov_desc": mov.historico, "mov_valor": float(mov.valor),
-                        "parcela_id": str(cand.id), "parcela_valor": float(cand.valor),
+                        "parcela_id": str(p.id) if p else None, "lancamento_id": str(l.id) if l else None,
                         "score": score, "status": "APROVADO" if mc_status == StatusCandidato.APROVADO else "PENDENTE",
                         "regras": regras_json
                     })

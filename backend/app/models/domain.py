@@ -268,6 +268,7 @@ class MatchCandidate(AuditableBase):
     execucao_id = Column(String(36), ForeignKey("execucoes_pipeline.id"), nullable=False)
     movimentacao_id = Column(UUID(as_uuid=True), ForeignKey('movimentacoes_bancarias.id'), nullable=False)
     parcela_id = Column(UUID(as_uuid=True), ForeignKey('parcelas_despesa.id'), nullable=True)
+    lancamento_id = Column(UUID(as_uuid=True), ForeignKey('lancamentos_contabeis.id'), nullable=True)
     
     score_total = Column(Float, nullable=False)
     status = Column(Enum(StatusCandidato), nullable=False)
@@ -284,6 +285,7 @@ class MatchCandidate(AuditableBase):
     execucao = relationship("ExecucaoPipeline")
     movimentacao = relationship("MovimentacaoBancaria")
     parcela = relationship("ParcelaDespesa")
+    lancamento = relationship("LancamentoContabil")
     revisor = relationship("Usuario")
 
 class CandidateEvaluationLog(AuditableBase):
@@ -293,5 +295,6 @@ class CandidateEvaluationLog(AuditableBase):
     execucao_id = Column(String(36), ForeignKey("execucoes_pipeline.id"), nullable=False)
     movimentacao_id = Column(UUID(as_uuid=True), ForeignKey('movimentacoes_bancarias.id'), nullable=False)
     parcela_id = Column(UUID(as_uuid=True), ForeignKey('parcelas_despesa.id'), nullable=True)
+    lancamento_id = Column(UUID(as_uuid=True), ForeignKey('lancamentos_contabeis.id'), nullable=True)
     
     motivo_descarte = Column(String(255), nullable=False) # Ex: "Data fora da janela (+-10 dias)"
