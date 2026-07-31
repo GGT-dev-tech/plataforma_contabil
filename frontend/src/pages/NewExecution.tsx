@@ -14,10 +14,45 @@ export const NewExecution: React.FC = () => {
   const [razao, setRazao] = useState<File | null>(null);
   const [extrato, setExtrato] = useState<File | null>(null);
   
+  const [standardFile, setStandardFile] = useState<File | null>(null);
   const [status, setStatus] = useState<FormState>('IDLE');
   const [errorMsg, setErrorMsg] = useState('');
   
   const navigate = useNavigate();
+
+  const handleDownloadStandard = () => {
+    window.open(`${api.defaults.baseURL}/templates/standard`, '_blank');
+  };
+
+  const handleStandardSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!standardFile) {
+      setErrorMsg('Por favor, selecione o arquivo da Planilha Padrão.');
+      return;
+    }
+
+    try {
+      setStatus('LOADING');
+      setErrorMsg('');
+
+      const res = await api.post('/executions');
+      const execution = res.data;
+
+      const formData = new FormData();
+      formData.append('file', standardFile);
+      await api.post(`/executions/${execution.id}/import-standard`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+
+      setStatus('CONCLUIDO');
+      navigate(`/executions/${execution.id}/staging`);
+
+    } catch (err: any) {
+      console.error(err);
+      setStatus('ERRO');
+      setErrorMsg('Ocorreu um erro durante a importação da planilha padrão.');
+    }
+  };
 
   const handleFileChange = (setter: React.Dispatch<React.SetStateAction<File | null>>) => (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -111,22 +146,48 @@ export const NewExecution: React.FC = () => {
       <Breadcrumb items={[{ label: 'Execuções', href: '/executions' }, { label: 'Nova Conciliação' }]} />
       <PageHeader title="Nova Conciliação" description="Inicie um novo processo de conciliação enviando os arquivos base." />
 
-      <GlassPanel className="p-8">
+      <GlassPanel className="p-8 space-y-6">
+        <div className="bg-primary-50/50 dark:bg-primary-950/30 border border-primary-200 dark:border-primary-800/50 rounded-xl p-6 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div>
+            <h3 className="text-lg font-semibold text-primary-900 dark:text-primary-100">Modelo Padrão do Sistema (Recomendado)</h3>
+            <p className="text-sm text-primary-700 dark:text-primary-300">Baixe o modelo `.xlsx` padronizado com abas de Receitas, Despesas, Extrato e Dinheiro para editar e revisar no Staging.</p>
+          </div>
+          <Button onClick={handleDownloadStandard} variant="outline" className="shrink-0">
+            Baixar Modelo Padrão .xlsx
+          </Button>
+        </div>
+
         {status === 'ERRO' && (
-          <div className="p-4 bg-destructive/10 text-destructive border border-destructive/20 rounded-lg mb-6 flex items-center gap-3">
+          <div className="p-4 bg-destructive/10 text-destructive border border-destructive/20 rounded-lg flex items-center gap-3">
             <AlertCircle className="w-5 h-5" />
             <p className="font-medium">{errorMsg}</p>
           </div>
         )}
         
         {status === 'CONCLUIDO' && (
-          <div className="p-4 bg-green-50 dark:bg-green-500/10 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-500/20 rounded-lg mb-6 flex items-center gap-3">
+          <div className="p-4 bg-green-50 dark:bg-green-500/10 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-500/20 rounded-lg flex items-center gap-3">
             <CheckCircle2 className="w-5 h-5" />
-            <p className="font-medium">Pipeline iniciada com sucesso! Redirecionando...</p>
+            <p className="font-medium">Importação concluída! Redirecionando para a área de revisão...</p>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleStandardSubmit} className="space-y-4 pt-2 border-b border-gray-200 dark:border-gray-700/50 pb-6">
+          <h4 className="font-medium text-gray-900 dark:text-gray-100">Envio da Planilha Padrão Integrada</h4>
+          <FileDropzone 
+            label="Planilha Padrão (.xlsx)" 
+            file={standardFile} 
+            onChange={handleFileChange(setStandardFile)} 
+            disabled={status !== 'IDLE' && status !== 'ERRO'} 
+          />
+          <div className="flex justify-end">
+            <Button type="submit" isLoading={status === 'LOADING'} disabled={!standardFile}>
+              Carregar no Staging CRUD
+            </Button>
+          </div>
+        </form>
+
+        <form onSubmit={handleSubmit} className="space-y-6 pt-4">
+          <h4 className="font-medium text-gray-500 dark:text-gray-400 text-sm uppercase tracking-wider">Ou envie os arquivos legados separados</h4>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <FileDropzone 
               label="Despesas (ERP)" 

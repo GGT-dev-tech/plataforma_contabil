@@ -288,13 +288,58 @@ class MatchCandidate(AuditableBase):
     lancamento = relationship("LancamentoContabil")
     revisor = relationship("Usuario")
 
-class CandidateEvaluationLog(AuditableBase):
-    """Analytics Data para o topo do funil, representando quem nunca foi candidato (ex: filtro de data)"""
-    __tablename__ = "candidate_evaluation_log"
-    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    execucao_id = Column(String(36), ForeignKey("execucoes_pipeline.id"), nullable=False)
-    movimentacao_id = Column(UUID(as_uuid=True), ForeignKey('movimentacoes_bancarias.id'), nullable=False)
-    parcela_id = Column(UUID(as_uuid=True), ForeignKey('parcelas_despesa.id'), nullable=True)
-    lancamento_id = Column(UUID(as_uuid=True), ForeignKey('lancamentos_contabeis.id'), nullable=True)
-    
     motivo_descarte = Column(String(255), nullable=False) # Ex: "Data fora da janela (+-10 dias)"
+
+class TipoContaFinanceira(str, enum.Enum):
+    BANCO = "BANCO"
+    CAIXA_ESPECIE = "CAIXA_ESPECIE"
+    CARTAO_CREDITO = "CARTAO_CREDITO"
+
+class ContaFinanceira(AuditableBase):
+    __tablename__ = 'contas_financeiras'
+    nome = Column(String(100), nullable=False) # Ex: Banco Inter, Caixa Geral (Dinheiro)
+    tipo = Column(Enum(TipoContaFinanceira), default=TipoContaFinanceira.BANCO, nullable=False)
+    banco_codigo = Column(String(10), nullable=True) # Ex: 077
+    agencia = Column(String(20), nullable=True)
+    numero_conta = Column(String(30), nullable=True)
+    saldo_inicial = Column(Numeric(15, 2), default=0.0)
+
+class TipoStaging(str, enum.Enum):
+    RECEITA = "RECEITA"
+    DESPESA = "DESPESA"
+    EXTRATO = "EXTRATO"
+    DINHEIRO = "DINHEIRO"
+
+class StagingRegistro(AuditableBase):
+    """Área de staging para edição CRUD dos dados importados da planilha padrão antes do cálculo"""
+    __tablename__ = 'staging_registros'
+    execucao_id = Column(String(36), ForeignKey('execucoes_pipeline.id'), nullable=False)
+    tipo = Column(Enum(TipoStaging), nullable=False)
+    
+    data = Column(Date, nullable=False)
+    descricao = Column(String(255), nullable=False)
+    valor = Column(Numeric(15, 2), nullable=False)
+    
+    # Detalhes opcionais por tipo
+    entidade_nome = Column(String(255), nullable=True) # Cliente ou Fornecedor
+    cnpj_cpf = Column(String(30), nullable=True)
+    categoria = Column(String(100), nullable=True)
+    conta_origem = Column(String(100), nullable=True)
+    conta_destino = Column(String(100), nullable=True)
+    forma_pagamento = Column(String(50), nullable=True) # PIX, BOLETO, DINHEIRO, TED
+    
+    # Status de edição no Staging
+    processado = Column(Boolean, default=False)
+    observacoes = Column(Text, nullable=True)
+
+class Receita(AuditableBase):
+    __tablename__ = 'receitas'
+    execucao_id = Column(String(36), ForeignKey('execucoes_pipeline.id'), nullable=True)
+    cliente_nome = Column(String(255), nullable=False)
+    descricao = Column(String(255), nullable=False)
+    valor_total = Column(Numeric(15, 2), nullable=False)
+    data_emissao = Column(Date, nullable=False)
+    data_recebimento = Column(Date, nullable=True)
+    forma_pagamento = Column(String(50), nullable=True)
+    conta_destino = Column(String(100), nullable=True)
+

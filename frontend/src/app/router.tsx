@@ -10,6 +10,8 @@ import { ExecutionView } from '../pages/ExecutionView';
 import { Showcase } from '../pages/Showcase';
 import { AppShell } from '../components/layout/AppShell';
 
+import { StagingGrid } from '../pages/StagingGrid';
+
 export const AppRouter: React.FC = () => {
   return (
     <BrowserRouter>
@@ -26,6 +28,7 @@ export const AppRouter: React.FC = () => {
             <Route element={<ProtectedRoute allowedRoles={PERMISSIONS.CAN_VIEW_DASHBOARD} />}>
               <Route path="/executions" element={<ExecutionsList />} />
               <Route path="/executions/:id" element={<ExecutionView />} />
+              <Route path="/executions/:id/staging" element={<StagingGrid />} />
             </Route>
             
             <Route element={<ProtectedRoute allowedRoles={PERMISSIONS.CAN_CREATE_EXECUTION} />}>
