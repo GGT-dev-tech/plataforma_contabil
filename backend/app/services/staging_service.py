@@ -9,9 +9,9 @@ from app.engine.tax_engine import TaxEngine
 from app.engine.core import MatchOrchestrator
 
 class StagingService:
-    def __init__(self, db: Session):
+    def __init__(self, db: Session, regime_tributario: str = "LUCRO_PRESUMIDO"):
         self.db = db
-        self.tax_engine = TaxEngine(regime_tributario="LUCRO_PRESUMIDO")
+        self.tax_engine = TaxEngine(regime_tributario=regime_tributario)
 
     def process_staging_items(self, exec_id: str, staging_items: List[StagingRegistro]) -> Dict[str, Any]:
         tax_summary = {
@@ -25,9 +25,7 @@ class StagingService:
             self._process_item(exec_id, item, tax_summary)
             item.processado = True
 
-        self.db.commit()
-
-        # Executar MatchOrchestrator
+        # Executar MatchOrchestrator sem commitar, delegando transação ao UoW externo
         orchestrator = MatchOrchestrator(self.db, execucao_id=exec_id)
         match_stats = orchestrator.run_pipeline()
 

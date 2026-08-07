@@ -111,7 +111,12 @@ def review_candidate(id: str, decision: schemas.DecisionRequest, db: Session = D
     if current_user.role == Role.AUDITOR: raise HTTPException(status_code=403)
     
     with SQLAlchemyUnitOfWork(db) as uow:
-        cand = uow.session.query(MatchCandidate).filter(MatchCandidate.id == id).first()
+        from sqlalchemy.exc import OperationalError
+        try:
+            cand = uow.session.query(MatchCandidate).filter(MatchCandidate.id == id).with_for_update(nowait=True).first()
+        except OperationalError:
+            raise HTTPException(status_code=409, detail="Candidato já está sendo avaliado por outro usuário (Concorrência).")
+            
         if not cand: raise HTTPException(status_code=404)
         if cand.status != StatusCandidato.PENDENTE_REVISAO: raise HTTPException(status_code=400)
         

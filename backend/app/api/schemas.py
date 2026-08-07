@@ -56,3 +56,16 @@ class DivergenciaSchema(BaseModel):
     valor: Decimal
     data_ocorrencia: datetime
     motivo: str
+
+from datetime import date
+
+class StagingUpdateSchema(BaseModel):
+    data: Optional[date] = None
+    descricao: Optional[str] = None
+    valor: Optional[float] = None
+    entidade_nome: Optional[str] = None
+    cnpj_cpf: Optional[str] = None
+    categoria: Optional[str] = None
+    conta_origem: Optional[str] = None
+    conta_destino: Optional[str] = None
+    forma_pagamento: Optional[str] = None

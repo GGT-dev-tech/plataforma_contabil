@@ -11,6 +11,7 @@ from app.core.uow import SQLAlchemyUnitOfWork
 from app.services.staging_service import StagingService
 from app.services.template_service import generate_standard_template
 from app.services.parsers.standard_parser import StandardTemplateParser
+from app.api import schemas
 
 router = APIRouter(tags=["staging"])
 
@@ -63,21 +64,14 @@ def get_staging_records(exec_id: str, db: Session = Depends(get_db), current_use
         return records
 
 @router.put("/executions/{exec_id}/staging/{item_id}")
-def update_staging_record(exec_id: str, item_id: str, data: Dict[str, Any], db: Session = Depends(get_db), current_user: Usuario = Depends(get_current_user)):
+def update_staging_record(exec_id: str, item_id: str, data: schemas.StagingUpdateSchema, db: Session = Depends(get_db), current_user: Usuario = Depends(get_current_user)):
     with SQLAlchemyUnitOfWork(db) as uow:
         item = uow.session.query(StagingRegistro).filter(StagingRegistro.id == item_id, StagingRegistro.execucao_id == exec_id).first()
         if not item: raise HTTPException(status_code=404, detail="Item de staging não encontrado")
 
-        if "data" in data and data["data"]:
-            item.data = datetime.strptime(data["data"], "%Y-%m-%d").date() if isinstance(data["data"], str) else data["data"]
-        if "descricao" in data: item.descricao = data["descricao"]
-        if "valor" in data: item.valor = data["valor"]
-        if "entidade_nome" in data: item.entidade_nome = data["entidade_nome"]
-        if "cnpj_cpf" in data: item.cnpj_cpf = data["cnpj_cpf"]
-        if "categoria" in data: item.categoria = data["categoria"]
-        if "conta_origem" in data: item.conta_origem = data["conta_origem"]
-        if "conta_destino" in data: item.conta_destino = data["conta_destino"]
-        if "forma_pagamento" in data: item.forma_pagamento = data["forma_pagamento"]
+        update_data = data.model_dump(exclude_unset=True)
+        for key, value in update_data.items():
+            setattr(item, key, value)
 
         uow.commit()
         uow.session.refresh(item)

@@ -19,4 +19,10 @@ celery_app.conf.update(
 @celery_app.task(name="run_pipeline_task")
 def run_pipeline_task(execucao_id: str):
     from app.pipeline.runner import execute_pipeline_core
-    execute_pipeline_core(execucao_id)
+    from app.api.deps import SessionLocal
+    
+    db = SessionLocal()
+    try:
+        execute_pipeline_core(execucao_id, db)
+    finally:
+        db.close()

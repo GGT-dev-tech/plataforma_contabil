@@ -19,7 +19,14 @@ class SyncRunner(PipelineRunner):
         self.db = db_session
         
     def run(self, execucao_id: str):
-        self.background_tasks.add_task(execute_pipeline_core, execucao_id)
+        def _bg_task():
+            from app.api.deps import SessionLocal
+            db = SessionLocal()
+            try:
+                execute_pipeline_core(execucao_id, db)
+            finally:
+                db.close()
+        self.background_tasks.add_task(_bg_task)
 
 class CeleryRunner(PipelineRunner):
     """Executa no Celery + Redis (Assíncrono e Resiliente)"""
@@ -27,13 +34,11 @@ class CeleryRunner(PipelineRunner):
         from app.worker import run_pipeline_task
         run_pipeline_task.delay(execucao_id)
 
-def execute_pipeline_core(execucao_id: str):
+def execute_pipeline_core(execucao_id: str, db: Session):
         from app.engine.core import MatchOrchestrator
         from app.models.domain import ExecucaoPipeline, StatusExecucao
-        from app.api.deps import SessionLocal
         import json
         
-        db = SessionLocal()
         try:
             execucao = db.query(ExecucaoPipeline).filter(ExecucaoPipeline.id == execucao_id).first()
             if not execucao:
@@ -70,5 +75,3 @@ def execute_pipeline_core(execucao_id: str):
                 import traceback
                 execucao.erro_stacktrace = traceback.format_exc()
                 db.commit()
-        finally:
-            db.close()
