@@ -141,4 +141,8 @@ def review_candidate(id: str, decision: schemas.DecisionRequest, db: Session = D
         else:
             raise HTTPException(status_code=400)
         uow.commit()
-    return {"message": "Decisão registrada com sucesso"}
+        
+        from app.core.events import EventBus
+        EventBus.publish("MatchDecisionEvent", cand_id=id, action=decision.action)
+
+    return {"message": "Decisão processada", "status": cand.status.name}

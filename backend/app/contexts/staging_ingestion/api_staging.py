@@ -104,8 +104,10 @@ def process_staging(exec_id: str, db: Session = Depends(get_db), current_user: U
         # but for now, we leave it as is or do an explicit uow.commit().
         uow.commit()
 
+        from app.core.events import EventBus
+        EventBus.publish("FilesIngestedEvent", exec_id=exec_id)
+
     return {
-        "message": "Staging processado com sucesso com apuração fiscal e conciliação 3-Way",
-        "tax_summary": result["tax_summary"],
-        "match_stats": result["match_stats"]
+        "message": "Staging processado. Motor de Matching inicializado assincronamente (EDA).",
+        "tax_summary": result["tax_summary"]
     }
