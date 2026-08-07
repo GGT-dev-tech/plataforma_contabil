@@ -5,12 +5,12 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from fastapi.responses import Response
 from sqlalchemy.orm import Session
 from app.api.deps import get_db
-from app.api.auth import get_current_user
+from app.contexts.identity.auth_utils import get_current_user
 from app.models.domain import Usuario, StagingRegistro, StatusExecucao
 from app.core.uow import SQLAlchemyUnitOfWork
-from app.services.staging_service import StagingService
-from app.services.template_service import generate_standard_template
-from app.services.parsers.standard_parser import StandardTemplateParser
+from app.contexts.staging_ingestion.service import StagingService
+from app.contexts.staging_ingestion.template_service import generate_standard_template
+from app.contexts.staging_ingestion.parsers.standard_parser import StandardTemplateParser
 from app.api import schemas
 
 router = APIRouter(tags=["staging"])

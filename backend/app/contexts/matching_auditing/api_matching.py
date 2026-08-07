@@ -4,11 +4,11 @@ from typing import List, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session, joinedload
 from app.api import schemas
-from app.api.auth import get_current_user
+from app.contexts.identity.auth_utils import get_current_user
 from app.api.deps import get_db
 from app.models.domain import Usuario, Role, MatchCandidate, MovimentacaoBancaria, ParcelaDespesa, LancamentoContabil, StatusCandidato, StatusConciliacao
 from app.core.uow import SQLAlchemyUnitOfWork
-from app.engine.core import SuggestionEngine, load_matching_profile
+from app.contexts.matching_auditing.engine.core import SuggestionEngine, load_matching_profile
 
 router = APIRouter(prefix="/executions", tags=["matching"])
 

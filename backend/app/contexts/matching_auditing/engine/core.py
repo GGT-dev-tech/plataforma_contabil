@@ -14,7 +14,7 @@ from app.models.domain import (
     ExecucaoPipeline, StatusExecucao,
     MatchCandidate, StatusCandidato, CandidateEvaluationLog
 )
-from app.engine.rules import IMatchingRule, RuleResult
+from app.contexts.matching_auditing.engine.rules import IMatchingRule, RuleResult
 
 def load_matching_profile():
     base_dir = Path(__file__).parent.parent
@@ -212,7 +212,7 @@ class MatchOrchestrator:
         weights = self.profile['weights']
         thresholds = self.profile['thresholds']
         
-        from app.engine.rules import ValueRule, DateRule, PixRule
+        from app.contexts.matching_auditing.engine.rules import ValueRule, DateRule, PixRule
         self.scoring = ScoringEngine([
             ValueRule(weight=weights.get('ValueRule', 2.0)),
             DateRule(weight=weights.get('DateRule', 1.5)),

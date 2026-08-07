@@ -18,7 +18,7 @@ celery_app.conf.update(
 
 @celery_app.task(name="run_pipeline_task")
 def run_pipeline_task(execucao_id: str):
-    from app.pipeline.runner import execute_pipeline_core
+    from app.contexts.matching_auditing.pipeline.runner import execute_pipeline_core
     from app.api.deps import SessionLocal
     
     db = SessionLocal()

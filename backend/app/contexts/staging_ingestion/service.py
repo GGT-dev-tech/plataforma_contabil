@@ -5,8 +5,8 @@ from app.models.domain import (
     StagingRegistro, TipoStaging, Receita, ParcelaDespesa, 
     Despesa, Fornecedor, MovimentacaoBancaria, TipoMovimentacao
 )
-from app.engine.tax_engine import TaxEngine
-from app.engine.core import MatchOrchestrator
+from app.contexts.matching_auditing.engine.tax_engine import TaxEngine
+from app.contexts.matching_auditing.engine.core import MatchOrchestrator
 
 class StagingService:
     def __init__(self, db: Session, regime_tributario: str = "LUCRO_PRESUMIDO"):

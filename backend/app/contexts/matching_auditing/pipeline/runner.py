@@ -31,11 +31,11 @@ class SyncRunner(PipelineRunner):
 class CeleryRunner(PipelineRunner):
     """Executa no Celery + Redis (Assíncrono e Resiliente)"""
     def run(self, execucao_id: str):
-        from app.worker import run_pipeline_task
+        from app.contexts.matching_auditing.worker import run_pipeline_task
         run_pipeline_task.delay(execucao_id)
 
 def execute_pipeline_core(execucao_id: str, db: Session):
-        from app.engine.core import MatchOrchestrator
+        from app.contexts.matching_auditing.engine.core import MatchOrchestrator
         from app.models.domain import ExecucaoPipeline, StatusExecucao
         import json
         
@@ -49,7 +49,7 @@ def execute_pipeline_core(execucao_id: str, db: Session):
             from app.models.domain import ImportacaoArquivo
             importacoes = db.query(ImportacaoArquivo).filter(ImportacaoArquivo.execucao_id == execucao_id).all()
             
-            from app.services.parsers import ParserFactory
+            from app.contexts.staging_ingestion.parsers import ParserFactory
             
             for imp in importacoes:
                 logger.info(f"Procurando parser para o arquivo {imp.tipo} - {imp.nome_original}")

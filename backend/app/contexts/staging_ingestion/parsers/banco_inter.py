@@ -3,7 +3,7 @@ import pandas as pd
 import re
 from sqlalchemy.orm import Session
 from app.models.domain import TipoArquivo, ExtratoBancario, MovimentacaoBancaria, TipoMovimentacao
-from app.services.parsers.base import ImportAdapter
+from app.contexts.staging_ingestion.parsers.base import ImportAdapter
 
 logger = logging.getLogger(__name__)
 

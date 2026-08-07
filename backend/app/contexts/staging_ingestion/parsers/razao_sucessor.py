@@ -2,7 +2,7 @@ import logging
 import pandas as pd
 from sqlalchemy.orm import Session
 from app.models.domain import TipoArquivo, LancamentoContabil, TipoMovimentacao
-from app.services.parsers.base import ImportAdapter
+from app.contexts.staging_ingestion.parsers.base import ImportAdapter
 
 logger = logging.getLogger(__name__)
 

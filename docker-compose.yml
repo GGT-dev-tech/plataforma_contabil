@@ -38,7 +38,7 @@ services:
 
   worker:
     build: ./backend
-    command: celery -A app.worker.celery_app worker --loglevel=info
+    command: celery -A app.contexts.matching_auditing.worker.celery_app worker --loglevel=info
     environment:
       - APP_ENV=staging
       - DATABASE_URL=postgresql+psycopg://postgres:postgres@postgres:5432/contabil

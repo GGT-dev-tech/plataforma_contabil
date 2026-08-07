@@ -4,12 +4,12 @@ import hashlib
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, BackgroundTasks
 from sqlalchemy.orm import Session
 from app.api import schemas
-from app.api.auth import get_current_user
+from app.contexts.identity.auth_utils import get_current_user
 from app.api.deps import get_db
 from app.models.domain import Usuario, Role, ExecucaoPipeline, StatusExecucao, ImportacaoArquivo, TipoArquivo
 from app.core.uow import SQLAlchemyUnitOfWork
 from app.services.storage import LocalStorageProvider
-from app.pipeline.runner import CeleryRunner
+from app.contexts.matching_auditing.pipeline.runner import CeleryRunner
 
 router = APIRouter(prefix="/executions", tags=["executions"])
 
@@ -101,6 +101,6 @@ def run_pipeline(exec_id: str, db: Session = Depends(get_db), current_user: Usua
 
 @router.get("/{exec_id}/summary")
 def execution_summary(exec_id: str, db: Session = Depends(get_db), current_user: Usuario = Depends(get_current_user)):
-    from app.cqrs.queries.get_execution_summary import GetExecutionSummaryQueryHandler
+    from app.contexts.matching_auditing.queries.get_execution_summary import GetExecutionSummaryQueryHandler
     summary = GetExecutionSummaryQueryHandler.execute(db, exec_id)
     return summary

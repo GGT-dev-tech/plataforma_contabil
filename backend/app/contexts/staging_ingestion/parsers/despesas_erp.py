@@ -6,7 +6,7 @@ from app.models.domain import (
     TipoArquivo, Despesa, ParcelaDespesa, Fornecedor, 
     Projeto, ContaBancaria, CategoriaFinanceira, Empresa
 )
-from app.services.parsers.base import ImportAdapter
+from app.contexts.staging_ingestion.parsers.base import ImportAdapter
 
 logger = logging.getLogger(__name__)
 
