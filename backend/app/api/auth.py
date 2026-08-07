@@ -7,10 +7,11 @@ from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 from app.api.deps import get_db
 from app.models.domain import Usuario
+from app.core.config import settings
 
-SECRET_KEY = "my_super_secret_jwt_key_for_plataforma_contabil"
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60
+SECRET_KEY = settings.JWT_SECRET_KEY
+ALGORITHM = settings.JWT_ALGORITHM
+ACCESS_TOKEN_EXPIRE_MINUTES = settings.JWT_EXPIRE_MINUTES
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/v1/auth/login")

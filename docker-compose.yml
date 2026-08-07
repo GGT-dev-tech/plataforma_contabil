@@ -36,6 +36,19 @@ services:
       redis:
         condition: service_healthy
 
+  worker:
+    build: ./backend
+    command: celery -A app.worker.celery_app worker --loglevel=info
+    environment:
+      - APP_ENV=staging
+      - DATABASE_URL=postgresql+psycopg://postgres:postgres@postgres:5432/contabil
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
   frontend:
     build: 
       context: ./frontend

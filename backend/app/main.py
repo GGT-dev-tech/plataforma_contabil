@@ -3,7 +3,7 @@ from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import text
-from app.api.endpoints import router
+from app.api.routers import auth, executions, staging, matching
 from app.core.config import settings
 from app.api.deps import get_db
 
@@ -43,7 +43,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(router, prefix="/api/v1")
+app.include_router(auth.router, prefix="/api/v1")
+app.include_router(executions.router, prefix="/api/v1")
+app.include_router(staging.router, prefix="/api/v1")
+app.include_router(matching.router, prefix="/api/v1")
 
 @app.get("/health")
 def health_check(db: Session = Depends(get_db)):

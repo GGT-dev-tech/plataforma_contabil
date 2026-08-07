@@ -19,9 +19,15 @@ class SyncRunner(PipelineRunner):
         self.db = db_session
         
     def run(self, execucao_id: str):
-        self.background_tasks.add_task(self._execute_pipeline_task, execucao_id)
-        
-    def _execute_pipeline_task(self, execucao_id: str):
+        self.background_tasks.add_task(execute_pipeline_core, execucao_id)
+
+class CeleryRunner(PipelineRunner):
+    """Executa no Celery + Redis (Assíncrono e Resiliente)"""
+    def run(self, execucao_id: str):
+        from app.worker import run_pipeline_task
+        run_pipeline_task.delay(execucao_id)
+
+def execute_pipeline_core(execucao_id: str):
         from app.engine.core import MatchOrchestrator
         from app.models.domain import ExecucaoPipeline, StatusExecucao
         from app.api.deps import SessionLocal
