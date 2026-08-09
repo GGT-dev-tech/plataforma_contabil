@@ -13,6 +13,19 @@ export const Login: React.FC = () => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
+  const getLoginUrl = () => {
+    let envUrl = (import.meta.env.VITE_API_URL || '').trim();
+    if (!envUrl) {
+      return '/api/v1/auth/login';
+    }
+    envUrl = envUrl.replace(/\/+$/, '');
+    envUrl = envUrl.replace(/\/auth\/login$/, '').replace(/\/auth$/, '');
+    if (!envUrl.endsWith('/api/v1')) {
+      envUrl = `${envUrl}/api/v1`;
+    }
+    return `${envUrl}/auth/login`;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -23,8 +36,10 @@ export const Login: React.FC = () => {
       formData.append('username', email);
       formData.append('password', password);
       
-      const baseUrl = import.meta.env.VITE_API_URL || '/api/v1';
-      const response = await fetch(`${baseUrl}/auth/login`, {
+      const targetUrl = getLoginUrl();
+      console.log("Enviando login para URL:", targetUrl);
+
+      const response = await fetch(targetUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded'
@@ -32,8 +47,15 @@ export const Login: React.FC = () => {
         body: formData
       });
       
+      if (response.status === 405) {
+        throw new Error('ERR_405_STATIC_SERVER');
+      }
+
       if (!response.ok) {
-        throw new Error('Credenciais inválidas');
+        if (response.status === 401) {
+          throw new Error('Credenciais inválidas. Verifique e-mail e senha.');
+        }
+        throw new Error(`Erro na API (${response.status})`);
       }
       
       const data = await response.json();
@@ -52,7 +74,9 @@ export const Login: React.FC = () => {
       console.error("Erro de Login capturado:", err);
       let errorMsg = err.message || 'Erro ao realizar login';
       
-      if (err instanceof SyntaxError || errorMsg.includes('Unexpected token')) {
+      if (errorMsg === 'ERR_405_STATIC_SERVER') {
+        errorMsg = 'Erro 405: A requisição de login está caindo no servidor do Frontend em vez do Backend. Configure VITE_API_URL no Railway do Frontend apontando para o seu Backend (ex: https://seu-backend.up.railway.app).';
+      } else if (err instanceof SyntaxError || errorMsg.includes('Unexpected token')) {
         errorMsg = 'Erro de conexão com a API. Verifique se a variável VITE_API_URL no Frontend está apontando para a URL correta do Backend no Railway.';
       } else if (errorMsg === 'Failed to fetch') {
         errorMsg = 'Falha de rede (CORS ou Backend fora do ar). Verifique as variáveis VITE_API_URL no Frontend e CORS_ORIGINS no Backend.';

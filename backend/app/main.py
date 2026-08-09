@@ -69,6 +69,7 @@ app.include_router(tesouraria_router, prefix="/api/v1")
 app.include_router(sincronizacao_router, prefix="/api/v1")
 app.include_router(analytics_router, prefix="/api/v1")
 app.include_router(auth_router, prefix="/api/v1")
+app.include_router(auth_router) # Support /auth/login directly
 
 @app.get("/health")
 def health_check(db: Session = Depends(get_db)):
