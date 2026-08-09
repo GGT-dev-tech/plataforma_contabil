@@ -1,13 +1,24 @@
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
 @theme {
-  --color-glass-base: rgba(255, 255, 255, 0.7);
-  --color-glass-border: rgba(255, 255, 255, 0.3);
-  --color-glass-base-dark: rgba(30, 30, 30, 0.7);
-  --color-glass-border-dark: rgba(255, 255, 255, 0.1);
-  --radius-glass: 0.75rem;
-  --animate-fade-in: fade-in 0.3s ease-out;
-  --animate-slide-up: slide-up 0.4s ease-out;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  
+  --color-primary-400: #818cf8;
+  --color-primary-500: #6366f1;
+  --color-primary-600: #4f46e5;
+  
+  --color-accent-400: #c084fc;
+  --color-accent-500: #a855f7;
+  
+  --color-dark-bg: #0b0f19;
+  --color-dark-surface: #111827;
+  --color-dark-surface-elevated: #1f2937;
+  
+  --animate-fade-in: fade-in 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  --animate-slide-up: slide-up 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  --animate-pulse-slow: pulse-slow 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  --animate-blob: blob 7s infinite;
 }
 
 @keyframes fade-in {
@@ -16,31 +27,55 @@
 }
 
 @keyframes slide-up {
-  from { opacity: 0; transform: translateY(10px); }
+  from { opacity: 0; transform: translateY(15px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
-body {
-  @apply bg-gray-50 text-gray-900 transition-colors duration-300;
+@keyframes pulse-slow {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
 }
 
-.dark body {
-  @apply bg-gray-900 text-gray-100;
+@keyframes blob {
+  0% { transform: translate(0px, 0px) scale(1); }
+  33% { transform: translate(30px, -50px) scale(1.1); }
+  66% { transform: translate(-20px, 20px) scale(0.9); }
+  100% { transform: translate(0px, 0px) scale(1); }
 }
 
-/* Base Glass Utilities */
-.glass {
-  @apply bg-white/70 backdrop-blur-md border border-white/30 shadow-sm transition-all duration-300;
+@layer base {
+  body {
+    @apply bg-[#0b0f19] text-gray-100 transition-colors duration-300 font-sans antialiased overflow-hidden selection:bg-primary-500/30 selection:text-white;
+  }
 }
 
-.dark .glass {
-  @apply bg-gray-800/70 border-white/10 shadow-black/20;
-}
+/* Premium Glass Utilities */
+@layer components {
+  .glass {
+    @apply bg-[#111827]/60 backdrop-blur-xl border border-white/5 shadow-2xl transition-all duration-300;
+  }
+  
+  .glass:hover {
+    @apply bg-[#111827]/80 border-white/10 shadow-primary-500/10;
+  }
 
-.glass-panel {
-  @apply bg-white/50 backdrop-blur-lg border border-white/40 shadow-md;
-}
-
-.dark .glass-panel {
-  @apply bg-gray-900/50 border-white/10 shadow-lg shadow-black/40;
+  .glass-panel {
+    @apply bg-[#1f2937]/50 backdrop-blur-2xl border border-white/10 shadow-lg;
+  }
+  
+  .glass-input {
+    @apply bg-black/20 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-transparent transition-all backdrop-blur-sm;
+  }
+  
+  .glass-button {
+    @apply relative overflow-hidden bg-white/5 hover:bg-white/10 text-white font-medium rounded-lg px-4 py-2 border border-white/10 transition-all active:scale-95 shadow-lg;
+  }
+  
+  .glass-button-primary {
+    @apply relative overflow-hidden bg-primary-600/80 hover:bg-primary-500/90 text-white font-medium rounded-lg px-4 py-2 border border-primary-400/30 transition-all active:scale-95 shadow-lg shadow-primary-500/20;
+  }
+  
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary-400 to-accent-400;
+  }
 }

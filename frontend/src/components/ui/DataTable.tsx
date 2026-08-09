@@ -22,22 +22,25 @@ export function DataTable<T>({
   emptyMessage = 'Nenhum registro encontrado.'
 }: DataTableProps<T>) {
   return (
-    <div className="w-full overflow-x-auto rounded-xl border border-gray-200/50 dark:border-gray-700/50 bg-white/50 dark:bg-gray-800/50 backdrop-blur-md">
-      <table className="w-full text-left text-sm text-gray-700 dark:text-gray-300">
-        <thead className="bg-gray-50/50 dark:bg-gray-900/50 border-b border-gray-200/50 dark:border-gray-700/50 uppercase text-xs font-semibold text-gray-500 dark:text-gray-400">
+    <div className="w-full overflow-x-auto rounded-2xl border border-white/10 glass">
+      <table className="w-full text-left text-sm text-gray-300">
+        <thead className="bg-white/5 border-b border-white/10 uppercase text-xs font-semibold text-gray-400 tracking-wider">
           <tr>
             {columns.map((col, idx) => (
-              <th key={idx} className={`px-6 py-4 ${col.className || ''}`}>
+              <th key={idx} className={`px-6 py-5 ${col.className || ''}`}>
                 {col.header}
               </th>
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-200/50 dark:divide-gray-700/50">
+        <tbody className="divide-y divide-white/5">
           {data.length === 0 ? (
             <tr>
-              <td colSpan={columns.length} className="px-6 py-12 text-center text-gray-500 dark:text-gray-400">
-                {emptyMessage}
+              <td colSpan={columns.length} className="px-6 py-16 text-center text-gray-500">
+                <div className="flex flex-col items-center justify-center">
+                  <span className="text-lg mb-2 opacity-50">📋</span>
+                  {emptyMessage}
+                </div>
               </td>
             </tr>
           ) : (
@@ -46,12 +49,12 @@ export function DataTable<T>({
                 key={keyExtractor(item)} 
                 onClick={() => onRowClick?.(item)}
                 className={`
-                  transition-colors duration-150
-                  ${onRowClick ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50' : 'hover:bg-transparent'}
+                  transition-all duration-200 group
+                  ${onRowClick ? 'cursor-pointer hover:bg-white/5 hover:scale-[1.002]' : 'hover:bg-transparent'}
                 `}
               >
                 {columns.map((col, colIdx) => (
-                  <td key={colIdx} className={`px-6 py-4 whitespace-nowrap ${col.className || ''}`}>
+                  <td key={colIdx} className={`px-6 py-4 whitespace-nowrap transition-colors group-hover:text-white ${col.className || ''}`}>
                     {typeof col.accessor === 'function' ? col.accessor(item) : (item[col.accessor] as any)}
                   </td>
                 ))}
