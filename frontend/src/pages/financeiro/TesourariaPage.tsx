@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Landmark, ArrowUpRight, ArrowDownRight, Plus, Search, DollarSign } from 'lucide-react';
+import { Landmark, ArrowUpRight, ArrowDownRight, Plus, Search } from 'lucide-react';
 import { useWorkspace } from '../../contexts/WorkspaceContext';
 
 interface ContaBancaria {
