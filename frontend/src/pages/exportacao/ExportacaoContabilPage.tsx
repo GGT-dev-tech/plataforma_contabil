@@ -3,7 +3,7 @@ import { Download, FileText, Settings, AlertCircle } from 'lucide-react';
 import { useWorkspace } from '../../contexts/WorkspaceContext';
 
 export const ExportacaoContabilPage: React.FC = () => {
-  const { currentWorkspace } = useWorkspace();
+  const { activeWorkspace } = useWorkspace();
   const [loading, setLoading] = useState(false);
   const [formato, setFormato] = useState('dominio_sistemas');
   const [dataInicio, setDataInicio] = useState('');
@@ -11,7 +11,7 @@ export const ExportacaoContabilPage: React.FC = () => {
 
   const handleExport = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentWorkspace) {
+    if (!activeWorkspace) {
       alert("Selecione um Workspace/Construtora");
       return;
     }
@@ -22,7 +22,7 @@ export const ExportacaoContabilPage: React.FC = () => {
       
       const params = new URLSearchParams();
       params.append('formato', formato);
-      params.append('empresa_id', currentWorkspace.id);
+      params.append('empresa_id', activeWorkspace.id);
       
       if (dataInicio) params.append('data_inicio', dataInicio);
       if (dataFim) params.append('data_fim', dataFim);
@@ -114,7 +114,7 @@ export const ExportacaoContabilPage: React.FC = () => {
                 <input 
                   type="text"
                   readOnly
-                  value={currentWorkspace?.razao_social || 'Nenhuma selecionada'}
+                  value={activeWorkspace?.razao_social || 'Nenhuma selecionada'}
                   className="w-full bg-black/20 border border-white/5 rounded-xl px-4 py-3 text-gray-400 cursor-not-allowed outline-none"
                 />
               </div>
@@ -147,7 +147,7 @@ export const ExportacaoContabilPage: React.FC = () => {
             <div className="pt-4 border-t border-white/5 flex justify-end">
               <button 
                 type="submit"
-                disabled={loading || !currentWorkspace}
+                disabled={loading || !activeWorkspace}
                 className="px-6 py-3 bg-primary-600 hover:bg-primary-500 text-white rounded-xl font-medium transition-all shadow-[0_0_20px_rgba(37,99,235,0.2)] hover:shadow-[0_0_25px_rgba(37,99,235,0.3)] flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? (

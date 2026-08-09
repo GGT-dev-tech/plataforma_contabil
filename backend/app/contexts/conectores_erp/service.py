@@ -5,7 +5,7 @@ from datetime import datetime
 import json
 
 from app.models.obra import Obra
-from app.models.documento_fiscal import DocumentoFiscalV2, TipoDocumentoFiscal, NaturezaOperacaoFiscal
+from app.models.documento_fiscal import DocumentoFiscalV2, TipoDocumentoFiscal, NaturezaOperacao
 from app.contexts.conectores_erp.adapters.sienge import SiengeConnector
 
 class ConectorErpService:
@@ -81,7 +81,7 @@ class ConectorErpService:
             
             if not existente:
                 tipo = TipoDocumentoFiscal.NFE if "NFE" in doc["type"] else TipoDocumentoFiscal.NFSE
-                natureza = NaturezaOperacaoFiscal.MATERIAL if "MATERIAL" in doc["type"] else NaturezaOperacaoFiscal.SERVICO
+                natureza = NaturezaOperacao.MATERIAL if "MATERIAL" in doc["type"] else NaturezaOperacao.SERVICO
                 
                 novo = DocumentoFiscalV2(
                     id=str(uuid.uuid4()),
