@@ -13,8 +13,12 @@ def create_initial_users():
     print("Creating initial users...")
     with Session(engine) as db:
         # Check if users already exist
-        if db.query(Usuario).first():
-            print("Users already exist in the database. Exiting.")
+        admin = db.query(Usuario).filter(Usuario.email == "admin@plataformacontabil.com").first()
+        if admin:
+            print("Admin user exists. Forcefully resetting password to ensure hash compatibility...")
+            admin.hashed_password = get_password_hash("admin123")
+            db.commit()
+            print("Admin password reset.")
             return
 
         # Create Admin
