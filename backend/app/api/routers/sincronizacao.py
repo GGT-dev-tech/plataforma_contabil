@@ -4,7 +4,6 @@ from typing import List, Dict
 
 from app.api.deps import get_db
 from app.contexts.conectores_erp.service import ConectorErpService
-from app.contexts.obras.api_obras import ObraResponse
 
 router = APIRouter(
     prefix="/sincronizacao",
