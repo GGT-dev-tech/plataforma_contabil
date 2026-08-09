@@ -3,7 +3,7 @@ from fastapi.responses import Response
 from sqlalchemy.orm import Session
 from typing import Optional
 
-from app.api.dependencies import get_db
+from app.api.deps import get_db
 from app.contexts.exportacao.service import ExportacaoService
 
 router = APIRouter(
