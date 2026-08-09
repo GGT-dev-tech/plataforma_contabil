@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Landmark, AlertCircle, Plus, CheckCircle2, XCircle, Clock } from 'lucide-react';
+import { Landmark, AlertCircle, CheckCircle2, XCircle, Clock } from 'lucide-react';
 import { useWorkspace } from '../../contexts/WorkspaceContext';
 
 interface Titulo {
