@@ -42,20 +42,30 @@ class GenericPDFAdapter(ImportAdapter):
                     except:
                         pass
                         
-                val_match = re.search(r'R\$\s*[\d\.,]+', text_line)
+                val_match = re.search(r'-?R\$\s*[\d\.,]+', text_line)
+                if not val_match:
+                    continue
+                    
                 valor = 0.0
-                if val_match:
-                    v_str = val_match.group(0).replace('R$', '').replace('.', '').replace(',', '.').strip()
-                    try:
-                        valor = float(v_str)
-                    except:
-                        pass
+                # Captura tudo, depois extrai o sinal de menos se houver
+                match_str = val_match.group(0)
+                is_negative = match_str.startswith('-')
+                v_str = match_str.replace('-','').replace('R$', '').replace('.', '').replace(',', '.').strip()
+                try:
+                    valor = float(v_str)
+                    if is_negative:
+                        valor = -valor
+                except:
+                    pass
                 
                 # Inferir o tipo baseado no nome do arquivo
                 tipo_st = TipoStaging.EXTRATO
                 
-                # Para evitar inserir tipo invalido, tratamos tudo como EXTRATO na generic para PDF
-                # Caso deseje suporte a despesas via PDF, ajustar aqui.
+                filename_lower = file_path.lower()
+                if 'razao' in filename_lower or 'despesa' in filename_lower:
+                    tipo_st = TipoStaging.DESPESA
+                elif 'extrato' in filename_lower:
+                    tipo_st = TipoStaging.EXTRATO
                 
                 reg = StagingRegistro(
                     id=str(uuid.uuid4()),
