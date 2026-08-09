@@ -80,13 +80,10 @@ export const Sidebar: React.FC = () => {
             <Receipt className="w-4 h-4 mr-3" />
             Receitas & Despesas
           </NavLink>
-          <div className="relative group cursor-not-allowed">
-            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[9px] font-bold uppercase tracking-wider bg-white/10 text-gray-400 px-2 py-0.5 rounded-full">Em breve</div>
-            <div className={`${navItemClass({ isActive: false })} opacity-50 pointer-events-none`}>
-              <Landmark className="w-4 h-4 mr-3" />
-              Contas & Dinheiro
-            </div>
-          </div>
+          <NavLink to="/tesouraria" className={navItemClass}>
+            <Landmark className="w-4 h-4 mr-3" />
+            Contas & Dinheiro
+          </NavLink>
         </div>
 
         <div>
