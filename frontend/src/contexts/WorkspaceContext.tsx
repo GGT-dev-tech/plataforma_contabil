@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { apiClient } from '../services/api';
+import { useAuth } from './AuthContext';
 
 interface Workspace {
   id: string;
@@ -24,8 +25,14 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [activeWorkspaceId, setActiveWorkspaceIdState] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const { isAuthenticated } = useAuth();
 
   const fetchWorkspaces = useCallback(async () => {
+    if (!isAuthenticated) {
+      setWorkspaces([]);
+      setIsLoading(false);
+      return;
+    }
     setIsLoading(true);
     try {
       const response = await apiClient.get('/workspaces/empresas');
@@ -50,7 +57,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     fetchWorkspaces();
-  }, [fetchWorkspaces]);
+  }, [fetchWorkspaces, isAuthenticated]);
 
   const setActiveWorkspaceId = (id: string | null) => {
     setActiveWorkspaceIdState(id);
