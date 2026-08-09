@@ -17,7 +17,7 @@ from app.models.domain import (
 from app.contexts.matching_auditing.engine.rules import IMatchingRule, RuleResult
 
 def load_matching_profile():
-    base_dir = Path(__file__).parent.parent
+    base_dir = Path(__file__).parent.parent.parent.parent
     path = base_dir / "config" / "matching_profile.yaml"
     with open(path, 'r', encoding='utf-8') as f:
         return yaml.safe_load(f)
