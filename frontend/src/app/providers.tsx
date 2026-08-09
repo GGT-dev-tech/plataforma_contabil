@@ -1,7 +1,7 @@
 import React from 'react';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from './queryClient';
-import { AuthProvider } from '../auth/AuthProvider';
+import { AuthProvider } from '../contexts/AuthContext';
 import { WorkspaceProvider } from '../contexts/WorkspaceContext';
 // import { ThemeProvider } from '../theme/ThemeProvider'; // To be implemented
 // import { ModalProvider } from '../components/ui/ModalProvider'; // To be implemented

@@ -13,6 +13,7 @@ from app.contexts.obras.api_documentos_fiscais import router as documentos_fisca
 from app.api.routers.exportacao import router as exportacao_router
 from app.api.routers.sincronizacao import router as sincronizacao_router
 from app.api.routers.analytics import router as analytics_router
+from app.api.routers.auth import router as auth_router
 from app.core.config import settings
 from app.api.deps import get_db
 
@@ -58,6 +59,7 @@ app.include_router(documentos_fiscais_router, prefix="/api/v1")
 app.include_router(exportacao_router, prefix="/api/v1")
 app.include_router(sincronizacao_router, prefix="/api/v1")
 app.include_router(analytics_router, prefix="/api/v1")
+app.include_router(auth_router, prefix="/api/v1")
 
 @app.get("/health")
 def health_check(db: Session = Depends(get_db)):

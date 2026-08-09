@@ -1,9 +1,8 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ProtectedRoute } from '../auth/ProtectedRoute';
-import { PERMISSIONS } from '../auth/permissions';
 
-import { Login } from '../pages/Login';
+import { LoginPage } from '../pages/auth/LoginPage';
 import { NewExecution } from '../pages/NewExecution';
 import { ExecutionsList } from '../pages/ExecutionsList';
 import { ExecutionView } from '../pages/ExecutionView';
@@ -21,7 +20,7 @@ export const AppRouter: React.FC = () => {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/login" element={<Login />} />
+        <Route path="/login" element={<LoginPage />} />
         
         <Route element={<ProtectedRoute />}>
           <Route path="/" element={<DashboardClientes />} />
@@ -30,13 +29,13 @@ export const AppRouter: React.FC = () => {
           <Route element={<AppShell />}>
             <Route path="/ui" element={<Showcase />} />
             
-            <Route element={<ProtectedRoute allowedRoles={PERMISSIONS.CAN_VIEW_DASHBOARD} />}>
+            <Route element={<ProtectedRoute />}>
               <Route path="/executions" element={<ExecutionsList />} />
               <Route path="/executions/:id" element={<ExecutionView />} />
               <Route path="/executions/:id/staging" element={<StagingGrid />} />
             </Route>
             
-            <Route element={<ProtectedRoute allowedRoles={PERMISSIONS.CAN_CREATE_EXECUTION} />}>
+            <Route element={<ProtectedRoute />}>
               <Route path="/executions/new" element={<NewExecution />} />
               <Route path="/settings" element={<WorkspaceSettings />} />
               <Route path="/dashboard" element={<DashboardTributario />} />
