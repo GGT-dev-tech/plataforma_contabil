@@ -6,7 +6,7 @@ from jose import jwt, JWTError
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from app.database.session import SessionLocal
+from app.core.database import SessionLocal
 from app.core.config import settings
 from app.models.usuario import Usuario
 from app.core.security import SECRET_KEY, ALGORITHM

@@ -1,9 +1,9 @@
 import argparse
 from sqlalchemy.orm import Session
-from app.database.session import SessionLocal, engine
+from app.core.database import SessionLocal, engine
 from app.models.usuario import Usuario
 from app.core.security import get_password_hash
-from app.database.session import Base
+from app.models.base import Base
 
 def create_admin_user(email: str, password: str, nome: str):
     Base.metadata.create_all(bind=engine)

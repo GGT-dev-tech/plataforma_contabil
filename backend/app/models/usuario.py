@@ -1,7 +1,7 @@
 import uuid
 from sqlalchemy import Column, String, Boolean, DateTime
 from sqlalchemy.sql import func
-from app.database.session import Base
+from app.models.base import Base
 
 class Usuario(Base):
     __tablename__ = "usuarios"
