@@ -43,6 +43,9 @@ if isinstance(cors_origins, str):
     except:
         cors_origins = [cors_origins]
 
+# Clean up trailing slashes from origins to prevent CORS matching failures
+cors_origins = [origin.rstrip("/") for origin in cors_origins]
+
 # Adicionando CORS para o futuro frontend
 app.add_middleware(
     CORSMiddleware,
