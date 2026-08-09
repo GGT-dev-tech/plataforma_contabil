@@ -16,3 +16,5 @@ python-multipart
 python-calamine
 celery
 redis
+celery>=5.3.6
+redis>=5.0.1
