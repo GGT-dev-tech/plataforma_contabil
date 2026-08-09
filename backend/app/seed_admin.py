@@ -1,8 +1,9 @@
 import argparse
+import uuid
 from sqlalchemy.orm import Session
-from app.core.database import SessionLocal, engine
-from app.models.usuario import Usuario
-from app.core.security import get_password_hash
+from app.api.deps import SessionLocal, engine
+from app.models.domain import Usuario, Role
+from app.contexts.identity.auth_utils import get_password_hash
 from app.models.base import Base
 
 def create_admin_user(email: str, password: str, nome: str):
@@ -15,10 +16,11 @@ def create_admin_user(email: str, password: str, nome: str):
         return
         
     novo_usuario = Usuario(
+        id=str(uuid.uuid4()),
         email=email,
         nome=nome,
         hashed_password=get_password_hash(password),
-        is_admin=True,
+        role=Role.ADMIN,
         is_active=True
     )
     

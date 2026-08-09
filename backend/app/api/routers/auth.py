@@ -4,8 +4,8 @@ from sqlalchemy.orm import Session
 from datetime import timedelta
 
 from app.api.deps import get_db
-from app.models.usuario import Usuario
-from app.core.security import verify_password, create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES
+from app.models.domain import Usuario, Role
+from app.contexts.identity.auth_utils import verify_password, create_access_token, ACCESS_TOKEN_EXPIRE_MINUTES
 
 router = APIRouter(
     prefix="/auth",
@@ -27,16 +27,16 @@ def login_for_access_token(db: Session = Depends(get_db), form_data: OAuth2Passw
 
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
-        data={"sub": usuario.email, "id": usuario.id}, expires_delta=access_token_expires
+        data={"sub": str(usuario.id)}, expires_delta=access_token_expires
     )
     
     return {
         "access_token": access_token, 
         "token_type": "bearer",
         "user": {
-            "id": usuario.id,
+            "id": str(usuario.id),
             "nome": usuario.nome,
             "email": usuario.email,
-            "is_admin": usuario.is_admin
+            "is_admin": usuario.role == Role.ADMIN
         }
     }
