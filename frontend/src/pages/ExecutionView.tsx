@@ -6,6 +6,7 @@ import { PendingTab } from './ExecutionTabs/PendingTab';
 import { ConciliationsTab } from './ExecutionTabs/ConciliationsTab';
 import { DivergenciesTab } from './ExecutionTabs/DivergenciesTab';
 import { TimelineTab } from './ExecutionTabs/TimelineTab';
+import { ExportTab } from './ExecutionTabs/ExportTab';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../components/ui/Tabs';
 import { PageHeader } from '../components/layout/PageHeader';
@@ -41,6 +42,7 @@ export const ExecutionView: React.FC = () => {
             <TabsTrigger value="conciliations">Conciliados</TabsTrigger>
             <TabsTrigger value="divergencies">Divergências</TabsTrigger>
             <TabsTrigger value="timeline">Timeline</TabsTrigger>
+            <TabsTrigger value="export">Exportação</TabsTrigger>
           </TabsList>
           
           <TabsContent value="summary"><SummaryTab executionId={id!} /></TabsContent>
@@ -48,6 +50,7 @@ export const ExecutionView: React.FC = () => {
           <TabsContent value="conciliations"><ConciliationsTab executionId={id!} /></TabsContent>
           <TabsContent value="divergencies"><DivergenciesTab executionId={id!} /></TabsContent>
           <TabsContent value="timeline"><TimelineTab executionId={id!} /></TabsContent>
+          <TabsContent value="export"><ExportTab executionId={id!} /></TabsContent>
         </Tabs>
       </div>
     </div>

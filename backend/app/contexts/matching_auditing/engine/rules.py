@@ -121,7 +121,7 @@ class LancamentoDateRule(IMatchingRule):
         return RuleResult(score=max(0.0, 100.0 - (diff * 20)), confidence=0.4, weight=self.weight, reason=f"Distancia de {diff} dias")
 
 class FornecedorNameRule(IMatchingRule):
-    def __init__(self, weight: float = 1.0, threshold: float = 0.6):
+    def __init__(self, weight: float = 1.0, threshold: float = 0.5):
         self._weight = weight
         self.threshold = threshold
 
@@ -132,15 +132,18 @@ class FornecedorNameRule(IMatchingRule):
     def weight(self) -> float: return self._weight
 
     def evaluate(self, parcela: Optional[ParcelaDespesa], mov: MovimentacaoBancaria, lanc: Optional[LancamentoContabil]) -> RuleResult:
-        s1 = (parcela.fornecedor.nome if parcela and parcela.fornecedor else "").lower()
-        s2 = (mov.descricao or "").lower()
+        s1 = (parcela.fornecedor.nome if parcela and parcela.fornecedor else "").lower().strip()
+        s2 = (mov.descricao or "").lower().strip()
         
         if not s1 or not s2:
             return RuleResult(score=0.0, confidence=0.0, weight=self.weight, reason="Sem nomes para comparar")
+            
+        if s1 in s2 or s2 in s1:
+             return RuleResult(score=100.0, confidence=0.9, weight=self.weight, reason="Nome contido exatamente")
         
         similarity = difflib.SequenceMatcher(None, s1, s2).ratio()
         if similarity >= self.threshold:
-            return RuleResult(score=similarity * 100, confidence=similarity, weight=self.weight, reason="Match de nome fornecedor")
+            return RuleResult(score=similarity * 100, confidence=similarity, weight=self.weight, reason=f"Similaridade de nomes ({similarity*100:.0f}%)")
         
         return RuleResult(score=0.0, confidence=0.2, weight=self.weight, reason="Nome fornecedor incompativel")
 

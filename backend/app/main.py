@@ -3,7 +3,11 @@ from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import text
-from app.api.routers import auth, executions, staging, matching
+from app.api.routers import workspaces
+from app.contexts.identity.api import router as auth_router
+from app.contexts.staging_ingestion.api_executions import router as staging_executions_router
+from app.contexts.staging_ingestion.api_staging import router as staging_router
+from app.contexts.matching_auditing.api_matching import router as matching_router
 from app.core.config import settings
 from app.api.deps import get_db
 
@@ -11,12 +15,8 @@ from contextlib import asynccontextmanager
 from alembic.config import Config
 from alembic import command
 import os
-from app.scripts_runner import run_startup_tasks
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Executa as migrations e popula o banco de forma automática e segura no Railway
-    run_startup_tasks()
     yield
 
 app = FastAPI(
@@ -43,10 +43,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(auth.router, prefix="/api/v1")
-app.include_router(executions.router, prefix="/api/v1")
-app.include_router(staging.router, prefix="/api/v1")
-app.include_router(matching.router, prefix="/api/v1")
+app.include_router(auth_router, prefix="/api/v1")
+app.include_router(staging_executions_router, prefix="/api/v1")
+app.include_router(staging_router, prefix="/api/v1")
+app.include_router(matching_router, prefix="/api/v1")
+app.include_router(workspaces.router, prefix="/api/v1")
 
 @app.get("/health")
 def health_check(db: Session = Depends(get_db)):

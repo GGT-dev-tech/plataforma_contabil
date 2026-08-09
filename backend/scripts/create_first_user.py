@@ -7,7 +7,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from sqlalchemy.orm import Session
 from app.api.deps import engine
 from app.models.domain import Usuario, Role
-from app.api.auth import get_password_hash
+from app.contexts.identity.auth_utils import get_password_hash
 
 def create_initial_users():
     print("Creating initial users...")

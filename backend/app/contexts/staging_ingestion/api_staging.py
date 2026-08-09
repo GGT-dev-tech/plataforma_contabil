@@ -102,6 +102,8 @@ def process_staging(exec_id: str, db: Session = Depends(get_db), current_user: U
         # StagingService internally calls db.commit(), but here we respect UoW boundary.
         # Ideally, we would adapt StagingService to not commit if UoW is managing it, 
         # but for now, we leave it as is or do an explicit uow.commit().
+        execucao.status = StatusExecucao.CONCILIANDO
+        execucao.tax_summary = result["tax_summary"]
         uow.commit()
 
         from app.core.events import EventBus

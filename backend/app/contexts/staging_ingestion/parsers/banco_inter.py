@@ -2,7 +2,7 @@ import logging
 import pandas as pd
 import re
 from sqlalchemy.orm import Session
-from app.models.domain import TipoArquivo, ExtratoBancario, MovimentacaoBancaria, TipoMovimentacao
+from app.models.domain import TipoArquivo, TipoStaging, StagingRegistro
 from app.contexts.staging_ingestion.parsers.base import ImportAdapter
 
 logger = logging.getLogger(__name__)
@@ -10,8 +10,9 @@ logger = logging.getLogger(__name__)
 class ExtratoInterAdapter(ImportAdapter):
     
     def can_parse(self, file_path: str, tipo_arquivo: TipoArquivo) -> bool:
-        if tipo_arquivo != TipoArquivo.EXTRATO:
-            return False
+        if tipo_arquivo != TipoArquivo.EXTRATO: return False
+        if not file_path.lower().endswith(('.xlsx', '.csv', '.xls')): return False
+        
         try:
             df = pd.read_excel(file_path, nrows=10, header=None)
             text_content = " ".join([str(val) for val in df.values.flatten() if pd.notna(val)])
@@ -43,9 +44,7 @@ class ExtratoInterAdapter(ImportAdapter):
         logger.info(f"Usando ExtratoInterAdapter para arquivo {file_path}")
         df = pd.read_excel(file_path, header=None)
         
-        extrato = ExtratoBancario()
-        db_session.add(extrato)
-        db_session.flush()
+        # Extrato e Despesas serão achatados em StagingRegistro
         
         current_date = None
         novos_movimentos = 0
@@ -75,17 +74,15 @@ class ExtratoInterAdapter(ImportAdapter):
                 if valor == 0.0:
                     continue
                     
-                tipo = TipoMovimentacao.D if valor < 0 else TipoMovimentacao.C
-                
-                mov = MovimentacaoBancaria(
+                import uuid
+                mov = StagingRegistro(
+                    id=str(uuid.uuid4()),
                     execucao_id=execucao_id,
-                    extrato_id=extrato.id,
+                    tipo=TipoStaging.EXTRATO,
                     data=current_date,
-                    historico=col0,
-                    descricao_original=col0,
+                    descricao=col0,
                     valor=valor,
-                    tipo=tipo,
-                    linha_origem=idx + 1
+                    processado=False
                 )
                 db_session.add(mov)
                 novos_movimentos += 1

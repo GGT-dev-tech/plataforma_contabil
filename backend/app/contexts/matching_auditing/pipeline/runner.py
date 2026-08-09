@@ -45,25 +45,31 @@ def execute_pipeline_core(execucao_id: str, db: Session):
                 logger.error(f"Execução {execucao_id} não encontrada.")
                 return
                 
-            # Recupera caminhos dos arquivos e roda parsers
-            from app.models.domain import ImportacaoArquivo
-            importacoes = db.query(ImportacaoArquivo).filter(ImportacaoArquivo.execucao_id == execucao_id).all()
-            
-            from app.contexts.staging_ingestion.parsers import ParserFactory
-            
-            for imp in importacoes:
-                logger.info(f"Procurando parser para o arquivo {imp.tipo} - {imp.nome_original}")
-                parser = ParserFactory.get_parser(imp.storage_path, imp.tipo)
-                if parser:
-                    logger.info(f"Parser encontrado: {parser.__class__.__name__}. Iniciando processamento...")
-                    parser.parse(imp.storage_path, db, execucao_id)
-                else:
-                    logger.warning(f"Nenhum parser encontrado para {imp.nome_original} (Tipo: {imp.tipo})")
-            
-            # Agora executa o motor
-            orchestrator = MatchOrchestrator(db, execucao_id=execucao_id)
-            stats = orchestrator.run_pipeline()
-            logger.info(f"Pipeline concluído: {stats}")
+            if execucao.status == StatusExecucao.PROCESSANDO:
+                # ETAPA 1: Parsing para Staging
+                from app.models.domain import ImportacaoArquivo
+                importacoes = db.query(ImportacaoArquivo).filter(ImportacaoArquivo.execucao_id == execucao_id).all()
+                
+                from app.contexts.staging_ingestion.parsers import ParserFactory
+                
+                for imp in importacoes:
+                    logger.info(f"Procurando parser para o arquivo {imp.tipo} - {imp.nome_original}")
+                    parser = ParserFactory.get_parser(imp.storage_path, imp.tipo)
+                    if parser:
+                        logger.info(f"Parser encontrado: {parser.__class__.__name__}. Iniciando processamento...")
+                        parser.parse(imp.storage_path, db, execucao_id)
+                    else:
+                        logger.warning(f"Nenhum parser encontrado para {imp.nome_original} (Tipo: {imp.tipo})")
+                
+                execucao.status = StatusExecucao.AGUARDANDO_REVISAO_STAGING
+                db.commit()
+                logger.info(f"Pipeline fase 1 (Parsing) concluído. Aguardando revisão no Frontend.")
+                
+            elif execucao.status == StatusExecucao.CONCILIANDO:
+                # ETAPA 2: Matching
+                orchestrator = MatchOrchestrator(db, execucao_id=execucao_id)
+                stats = orchestrator.run_pipeline()
+                logger.info(f"Pipeline fase 2 concluído: {stats}")
             
         except Exception as e:
             logger.error(f"Erro no pipeline {execucao_id}: {e}")

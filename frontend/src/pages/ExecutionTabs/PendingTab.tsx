@@ -6,7 +6,7 @@ import { GlassCard } from '../../components/ui/GlassCard';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { EmptyState } from '../../components/ui/EmptyState';
-import { CheckCircle2, XCircle } from 'lucide-react';
+import { CheckCircle2, XCircle, BrainCircuit } from 'lucide-react';
 import { Loading } from '../../components/ui/Loading';
 
 export const PendingTab: React.FC<{ executionId: string }> = ({ executionId }) => {
@@ -20,7 +20,7 @@ export const PendingTab: React.FC<{ executionId: string }> = ({ executionId }) =
 
   const decisionMutation = useMutation({
     mutationFn: async ({ id, action, comment }: { id: string; action: string; comment: string }) => {
-      await api.post(`/candidates/${id}/decision`, { action, comment });
+      await api.post(`/executions/candidates/${id}/decision`, { action, comment });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['execution', executionId, 'candidates'] });
@@ -71,6 +71,27 @@ export const PendingTab: React.FC<{ executionId: string }> = ({ executionId }) =
               <p className="text-lg font-bold mt-2">R$ {parseFloat(c.parcela_original.valor).toFixed(2)}</p>
             </div>
           </div>
+
+          {/* Explainable UI: Regras Acionadas */}
+          {c.regras && c.regras.length > 0 && (
+            <div className="mt-4 p-4 bg-primary-50/50 dark:bg-primary-900/10 rounded-lg border border-primary-100 dark:border-primary-800/30">
+              <h5 className="text-sm font-semibold text-primary-800 dark:text-primary-300 flex items-center gap-2 mb-3">
+                <BrainCircuit className="w-4 h-4" />
+                Justificativas do Algoritmo
+              </h5>
+              <div className="flex flex-wrap gap-2">
+                {c.regras.map((regra: any, index: number) => (
+                  <div key={index} className="flex items-center text-xs bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md px-2 py-1 shadow-sm">
+                    <span className="font-semibold text-gray-700 dark:text-gray-300 mr-1">{regra.rule}:</span>
+                    <span className="text-gray-600 dark:text-gray-400 mr-2">{regra.reason}</span>
+                    <Badge variant={regra.score > 80 ? 'success' : (regra.score > 50 ? 'warning' : 'destructive')} className="text-[10px] px-1.5 py-0">
+                      {(regra.score * regra.weight).toFixed(1)} pts
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {user?.role !== 'AUDITOR' && (
             <div className="mt-6 flex gap-3 border-t border-gray-200 dark:border-gray-700/50 pt-4">

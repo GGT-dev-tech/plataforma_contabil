@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Date, Numeric, Boolean, Enum, ForeignKey, UniqueConstraint, DateTime, Text, Float
+from sqlalchemy import Column, Integer, String, Date, Numeric, Boolean, Enum, ForeignKey, UniqueConstraint, DateTime, Text, Float, JSON
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID
 from datetime import date, datetime
@@ -17,6 +17,7 @@ class Usuario(AuditableBase):
     email = Column(String(255), unique=True, index=True)
     hashed_password = Column(String(255))
     nome = Column(String(255))
+    empresa_id = Column(UUID(as_uuid=True), ForeignKey('empresas.id'), nullable=True) # Nullable para usuarios admin/globais
     role = Column(Enum(Role), default=Role.ANALISTA)
     is_active = Column(Boolean, default=True)
 
@@ -25,6 +26,15 @@ class Empresa(AuditableBase):
     cnpj = Column(String, unique=True, index=True)
     razao_social = Column(String)
     nome_fantasia = Column(String)
+
+class ClientSchemaMapping(AuditableBase):
+    __tablename__ = 'client_schema_mappings'
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    empresa_id = Column(UUID(as_uuid=True), ForeignKey('empresas.id'), index=True, nullable=False)
+    # Assinatura gerada pelas colunas originais do arquivo (ex: sha256 de "Data,Fornecedor,Valor")
+    file_signature = Column(String(255), index=True, nullable=False)
+    # JSON contendo o De-Para, ex: {"Data de competência": "data", "Fornecedor": "descricao"}
+    mapping_json = Column(JSON, nullable=False)
 
 class ContaBancaria(AuditableBase):
     __tablename__ = 'contas_bancarias'
@@ -150,12 +160,15 @@ class StatusExecucao(str, enum.Enum):
     CRIADA = "CRIADA"
     ARQUIVOS_ANEXADOS = "ARQUIVOS_ANEXADOS"
     PROCESSANDO = "PROCESSANDO"
+    AGUARDANDO_REVISAO_STAGING = "AGUARDANDO_REVISAO_STAGING"
+    CONCILIANDO = "CONCILIANDO"
     CONCLUIDA = "CONCLUIDA"
     ERRO = "ERRO"
 
 class ExecucaoPipeline(AuditableBase):
     __tablename__ = "execucoes_pipeline"
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    empresa_id = Column(UUID(as_uuid=True), ForeignKey('empresas.id'), nullable=True) # Nullable for backward compatibility during dev, but should be enforced logically
     status = Column(Enum(StatusExecucao), default=StatusExecucao.CRIADA, nullable=False)
     
     # Inputs/Config
@@ -167,6 +180,7 @@ class ExecucaoPipeline(AuditableBase):
     data_fim = Column(DateTime, nullable=True)
     duracao_ms = Column(Float, nullable=True)
     hashes_arquivos = Column(Text, nullable=True) # Salvo como string de JSON
+    tax_summary = Column(JSON, nullable=True) # Impostos e Totais
     
     # Erro de Job
     erro_codigo = Column(String(100), nullable=True)
@@ -261,6 +275,16 @@ class StatusCandidato(str, enum.Enum):
     REJEITADO_PELO_MOTOR = "REJEITADO_PELO_MOTOR"
     APROVADO = "APROVADO"
 
+class CandidateEvaluationLog(AuditableBase):
+    __tablename__ = "candidate_evaluation_logs"
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    execucao_id = Column(String(36), ForeignKey("execucoes_pipeline.id"), nullable=False)
+    movimentacao_id = Column(UUID(as_uuid=True), ForeignKey('movimentacoes_bancarias.id'), nullable=False)
+    parcela_id = Column(UUID(as_uuid=True), ForeignKey('parcelas_despesa.id'), nullable=True)
+    lancamento_id = Column(UUID(as_uuid=True), ForeignKey('lancamentos_contabeis.id'), nullable=True)
+    regra = Column(String(100), nullable=False)
+    motivo_descarte = Column(Text, nullable=False)
+    
 class MatchCandidate(AuditableBase):
     """Representa um candidato avaliado pelo motor antes da decisão final"""
     __tablename__ = "match_candidates"
@@ -288,8 +312,6 @@ class MatchCandidate(AuditableBase):
     lancamento = relationship("LancamentoContabil")
     revisor = relationship("Usuario")
 
-    motivo_descarte = Column(String(255), nullable=False) # Ex: "Data fora da janela (+-10 dias)"
-
 class TipoContaFinanceira(str, enum.Enum):
     BANCO = "BANCO"
     CAIXA_ESPECIE = "CAIXA_ESPECIE"
@@ -312,8 +334,10 @@ class TipoStaging(str, enum.Enum):
 
 class StagingRegistro(AuditableBase):
     """Área de staging para edição CRUD dos dados importados da planilha padrão antes do cálculo"""
-    __tablename__ = 'staging_registros'
-    execucao_id = Column(String(36), ForeignKey('execucoes_pipeline.id'), nullable=False)
+    __tablename__ = 'staging_registro'
+    id = Column(String(50), primary_key=True)
+    execucao_id = Column(String(50), ForeignKey('execucoes_pipeline.id'), index=True)
+    empresa_id = Column(UUID(as_uuid=True), ForeignKey('empresas.id'), nullable=True)
     tipo = Column(Enum(TipoStaging), nullable=False)
     
     data = Column(Date, nullable=False)
@@ -334,6 +358,7 @@ class StagingRegistro(AuditableBase):
 
 class Receita(AuditableBase):
     __tablename__ = 'receitas'
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     execucao_id = Column(String(36), ForeignKey('execucoes_pipeline.id'), nullable=True)
     cliente_nome = Column(String(255), nullable=False)
     descricao = Column(String(255), nullable=False)

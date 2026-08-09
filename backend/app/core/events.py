@@ -19,3 +19,9 @@ class EventBus:
             cand_id = kwargs.get("cand_id")
             action = kwargs.get("action")
             logger.info(f"[EDA] Evento de Auditoria recebido. Match {cand_id} foi {action}. ERP Externo notificado.")
+            
+            if action == "APROVAR":
+                from app.contexts.matching_auditing.engine.accounting_generator import generate_accounting_entry
+                import threading
+                # Para evitar delay na API, executamos em background (ou Celery na infra real)
+                threading.Thread(target=generate_accounting_entry, args=(cand_id,)).start()

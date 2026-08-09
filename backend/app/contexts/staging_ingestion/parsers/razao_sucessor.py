@@ -11,6 +11,8 @@ class RazaoSucessorAdapter(ImportAdapter):
     def can_parse(self, file_path: str, tipo_arquivo: TipoArquivo) -> bool:
         if tipo_arquivo != TipoArquivo.RAZAO:
             return False
+        if not file_path.lower().endswith(('.xlsx', '.csv', '.xls')):
+            return False
         # Apenas tenta ler o header usando calamine, que ignora XML corrompido
         try:
             df = pd.read_excel(file_path, nrows=5, engine="calamine", header=None)

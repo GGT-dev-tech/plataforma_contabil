@@ -15,7 +15,8 @@ class GetExecutionSummaryQueryHandler:
                 (SELECT COUNT(1) FROM movimentacao_bancaria WHERE execucao_id = :exec_id) as total_movimentacoes,
                 (SELECT COUNT(1) FROM match_candidate WHERE execucao_id = :exec_id AND status = 'APROVADO') as total_aprovados,
                 (SELECT COUNT(1) FROM match_candidate WHERE execucao_id = :exec_id AND status = 'PENDENTE_REVISAO') as total_pendentes,
-                (SELECT COUNT(1) FROM match_candidate WHERE execucao_id = :exec_id AND status = 'REJEITADO_PELO_MOTOR') as total_rejeitados
+                (SELECT COUNT(1) FROM match_candidate WHERE execucao_id = :exec_id AND status = 'REJEITADO_PELO_MOTOR') as total_rejeitados,
+                (SELECT tax_summary FROM execucoes_pipeline WHERE id = :exec_id) as tax_summary
         """)
         
         # O fetchone vai retornar uma tupla ou row dict-like do banco
@@ -26,7 +27,8 @@ class GetExecutionSummaryQueryHandler:
                 "total_movimentacoes": 0,
                 "total_aprovados": 0,
                 "total_pendentes": 0,
-                "total_rejeitados": 0
+                "total_rejeitados": 0,
+                "tax_summary": None
             }
             
         return dict(result)

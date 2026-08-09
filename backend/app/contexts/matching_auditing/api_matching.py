@@ -1,20 +1,32 @@
 import json
+import csv
+import io
 from datetime import datetime
 from typing import List, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session, joinedload
 from app.api import schemas
 from app.contexts.identity.auth_utils import get_current_user
 from app.api.deps import get_db
-from app.models.domain import Usuario, Role, MatchCandidate, MovimentacaoBancaria, ParcelaDespesa, LancamentoContabil, StatusCandidato, StatusConciliacao
+from app.models.domain import Usuario, Role, MatchCandidate, MovimentacaoBancaria, ParcelaDespesa, LancamentoContabil, StatusCandidato, StatusConciliacao, ExecucaoPipeline
 from app.core.uow import SQLAlchemyUnitOfWork
 from app.contexts.matching_auditing.engine.core import SuggestionEngine, load_matching_profile
 
 router = APIRouter(prefix="/executions", tags=["matching"])
 
+def _enforce_tenant_access(uow: SQLAlchemyUnitOfWork, exec_id: str, current_user: Usuario):
+    execucao = uow.session.query(ExecucaoPipeline).filter(ExecucaoPipeline.id == exec_id).first()
+    if not execucao:
+        raise HTTPException(status_code=404, detail="Execução não encontrada")
+    if current_user.role != Role.ADMIN and execucao.empresa_id != current_user.empresa_id:
+        raise HTTPException(status_code=403, detail="Acesso negado a esta execução (Tenant Isolation).")
+    return execucao
+
 @router.get("/{exec_id}/candidates")
 def execution_candidates(exec_id: str, status: str = "PENDENTE_REVISAO", db: Session = Depends(get_db), current_user: Usuario = Depends(get_current_user)):
     with SQLAlchemyUnitOfWork(db) as uow:
+        _enforce_tenant_access(uow, exec_id, current_user)
         candidatos = uow.executions.get_candidates(uow.session, exec_id, status)
         
         mov_ids = [c.movimentacao_id for c in candidatos if c.movimentacao_id]
@@ -48,6 +60,7 @@ def execution_candidates(exec_id: str, status: str = "PENDENTE_REVISAO", db: Ses
 @router.get("/{exec_id}/conciliations")
 def execution_conciliations(exec_id: str, db: Session = Depends(get_db), current_user: Usuario = Depends(get_current_user)):
     with SQLAlchemyUnitOfWork(db) as uow:
+        _enforce_tenant_access(uow, exec_id, current_user)
         itens = uow.executions.get_conciliations(uow.session, exec_id)
         results = []
         for item in itens:
@@ -70,6 +83,7 @@ def execution_conciliations(exec_id: str, db: Session = Depends(get_db), current
 @router.get("/{exec_id}/divergencies")
 def execution_divergencies(exec_id: str, db: Session = Depends(get_db), current_user: Usuario = Depends(get_current_user)):
     with SQLAlchemyUnitOfWork(db) as uow:
+        _enforce_tenant_access(uow, exec_id, current_user)
         movs = uow.executions.get_divergencies(uow.session, exec_id)
         results = []
         for m in movs:
@@ -105,6 +119,38 @@ def execution_logs(exec_id: str, db: Session = Depends(get_db), current_user: Us
             })
         return sorted(events, key=lambda x: x.get('timestamp') or "")
 
+@router.get("/{exec_id}/export")
+def export_accounting_entries(exec_id: str, db: Session = Depends(get_db), current_user: Usuario = Depends(get_current_user)):
+    with SQLAlchemyUnitOfWork(db) as uow:
+        _enforce_tenant_access(uow, exec_id, current_user)
+        lancamentos = uow.session.query(LancamentoContabil).filter(LancamentoContabil.execucao_id == exec_id).all()
+        
+        output = io.StringIO()
+        writer = csv.writer(output, delimiter=';')
+        
+        # Cabeçalho padrão (ex: Domínio / ERP Genérico)
+        writer.writerow(["DATA", "CONTA_DEBITO", "CONTA_CREDITO", "VALOR", "HISTORICO", "LOTE"])
+        
+        for lanc in lancamentos:
+            conta_deb = lanc.conta_contrapartida if lanc.tipo.name == "D" else ""
+            conta_cred = lanc.conta_contrapartida if lanc.tipo.name == "C" else ""
+            writer.writerow([
+                lanc.data.strftime("%d/%m/%Y") if lanc.data else "",
+                conta_deb,
+                conta_cred,
+                f"{lanc.valor:.2f}".replace('.', ','),
+                lanc.historico,
+                lanc.lote
+            ])
+            
+        output.seek(0)
+        
+        return StreamingResponse(
+            iter([output.getvalue()]),
+            media_type="text/csv",
+            headers={"Content-Disposition": f"attachment; filename=lancamentos_{exec_id[:8]}.csv"}
+        )
+
 # Generic matching endpoints (deprecated globally, moved to matching slice but keeping route for compatibility)
 @router.post("/candidates/{id}/decision")
 def review_candidate(id: str, decision: schemas.DecisionRequest, db: Session = Depends(get_db), current_user: Usuario = Depends(get_current_user)):
@@ -118,6 +164,8 @@ def review_candidate(id: str, decision: schemas.DecisionRequest, db: Session = D
             raise HTTPException(status_code=409, detail="Candidato já está sendo avaliado por outro usuário (Concorrência).")
             
         if not cand: raise HTTPException(status_code=404)
+        _enforce_tenant_access(uow, cand.execucao_id, current_user)
+        
         if cand.status != StatusCandidato.PENDENTE_REVISAO: raise HTTPException(status_code=400)
         
         cand.reviewed_by = current_user.id

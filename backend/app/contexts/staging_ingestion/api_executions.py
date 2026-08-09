@@ -16,8 +16,11 @@ router = APIRouter(prefix="/executions", tags=["executions"])
 @router.get("")
 def list_executions(db: Session = Depends(get_db), current_user: Usuario = Depends(get_current_user)):
     with SQLAlchemyUnitOfWork(db) as uow:
-        execs = uow.executions.get_multi(uow.session, limit=100)
-        execs = sorted(execs, key=lambda x: x.data_inicio, reverse=True)
+        query = uow.session.query(ExecucaoPipeline)
+        if current_user.role != Role.ADMIN:
+            query = query.filter(ExecucaoPipeline.empresa_id == current_user.empresa_id)
+            
+        execs = query.order_by(ExecucaoPipeline.data_inicio.desc()).limit(100).all()
         return [{
             "id": e.id,
             "status": e.status.name,
@@ -30,6 +33,8 @@ def get_execution(exec_id: str, db: Session = Depends(get_db), current_user: Usu
     with SQLAlchemyUnitOfWork(db) as uow:
         e = uow.executions.get(uow.session, exec_id)
         if not e: raise HTTPException(status_code=404, detail="Não encontrado")
+        if current_user.role != Role.ADMIN and e.empresa_id != current_user.empresa_id:
+            raise HTTPException(status_code=403, detail="Acesso negado a dados de outra empresa (Multi-Tenant).")
         return {
             "id": e.id,
             "status": e.status.name,
@@ -38,14 +43,25 @@ def get_execution(exec_id: str, db: Session = Depends(get_db), current_user: Usu
             "matching_profile": e.matching_profile
         }
 
+class CreateExecutionRequest(schemas.BaseModel):
+    empresa_id: str = None
+
 @router.post("", response_model=schemas.ExecucaoPipelineSchema)
-def create_execution(db: Session = Depends(get_db), current_user: Usuario = Depends(get_current_user)):
+def create_execution(payload: CreateExecutionRequest = None, db: Session = Depends(get_db), current_user: Usuario = Depends(get_current_user)):
     if current_user.role not in [Role.ADMIN, Role.ANALISTA]:
         raise HTTPException(status_code=403, detail="Permissão negada")
+        
+    empresa_selecionada = current_user.empresa_id
+    if payload and payload.empresa_id:
+        if current_user.role == Role.ADMIN or str(current_user.empresa_id) == payload.empresa_id:
+            empresa_selecionada = payload.empresa_id
+        else:
+            raise HTTPException(status_code=403, detail="Acesso negado ao Workspace selecionado.")
     
     with SQLAlchemyUnitOfWork(db) as uow:
         execucao = ExecucaoPipeline(
             id=str(uuid.uuid4()), 
+            empresa_id=empresa_selecionada,
             status=StatusExecucao.CRIADA, 
             matching_profile="financeiro_2026", 
             runtime_profile="api"
@@ -61,6 +77,8 @@ def upload_files(exec_id: str, despesas: UploadFile = File(...), razao: UploadFi
     with SQLAlchemyUnitOfWork(db) as uow:
         execucao = uow.executions.get(uow.session, exec_id)
         if not execucao: raise HTTPException(status_code=404)
+        if current_user.role != Role.ADMIN and execucao.empresa_id != current_user.empresa_id:
+            raise HTTPException(status_code=403, detail="Acesso negado a dados de outra empresa (Multi-Tenant).")
         
         def save_and_hash(file_upload, tipo):
             content = file_upload.file.read()
@@ -89,6 +107,8 @@ def run_pipeline(exec_id: str, db: Session = Depends(get_db), current_user: Usua
     with SQLAlchemyUnitOfWork(db) as uow:
         execucao = uow.executions.get(uow.session, exec_id)
         if not execucao: raise HTTPException(status_code=404)
+        if current_user.role != Role.ADMIN and execucao.empresa_id != current_user.empresa_id:
+            raise HTTPException(status_code=403, detail="Acesso negado a dados de outra empresa.")
         if execucao.status != StatusExecucao.ARQUIVOS_ANEXADOS: raise HTTPException(status_code=400)
         
         execucao.status = StatusExecucao.PROCESSANDO
@@ -101,6 +121,12 @@ def run_pipeline(exec_id: str, db: Session = Depends(get_db), current_user: Usua
 
 @router.get("/{exec_id}/summary")
 def execution_summary(exec_id: str, db: Session = Depends(get_db), current_user: Usuario = Depends(get_current_user)):
+    with SQLAlchemyUnitOfWork(db) as uow:
+        execucao = uow.executions.get(uow.session, exec_id)
+        if not execucao: raise HTTPException(status_code=404)
+        if current_user.role != Role.ADMIN and execucao.empresa_id != current_user.empresa_id:
+            raise HTTPException(status_code=403, detail="Acesso negado")
+            
     from app.contexts.matching_auditing.queries.get_execution_summary import GetExecutionSummaryQueryHandler
     summary = GetExecutionSummaryQueryHandler.execute(db, exec_id)
     return summary

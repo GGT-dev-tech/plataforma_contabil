@@ -23,9 +23,9 @@ def run_e2e_test():
     
     print("\n4. Uploading files...")
     files = {
-        'despesas': open('test_data/despesas_sample.csv', 'rb'),
-        'razao': open('test_data/razao_sample.csv', 'rb'),
-        'extrato': open('test_data/extrato_sample.csv', 'rb')
+        'despesas': open('backend/tests/fixtures/production_sample/Despesas 06-2026.xlsx', 'rb'),
+        'razao': open('test_data/real/razao_real.pdf', 'rb'),
+        'extrato': open('test_data/real/extrato_real.pdf', 'rb')
     }
     requests.post(f"{BASE_URL}/executions/{exec_id}/files", headers=headers, files=files)
 
