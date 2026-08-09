@@ -68,7 +68,36 @@ def execute_pipeline_core(execucao_id: str, db: Session):
                 logger.info(f"Pipeline fase 1 (Parsing) concluído. Aguardando revisão no Frontend.")
                 
             elif execucao.status == StatusExecucao.CONCILIANDO:
-                # ETAPA 2: Matching
+                # ETAPA 2: Normalização, Enrichment e Matching
+                logger.info(f"Pipeline fase 2 iniciada para execução {execucao_id}.")
+                
+                # 2.1 Processar Staging para o Domínio
+                from app.contexts.staging_ingestion.service import StagingService
+                from app.models.domain import StagingRegistro, MovimentacaoBancaria, ParcelaDespesa, Fornecedor
+                
+                staging_items = db.query(StagingRegistro).filter(
+                    StagingRegistro.execucao_id == execucao_id, 
+                    StagingRegistro.processado == False
+                ).all()
+                
+                if staging_items:
+                    staging_service = StagingService(db)
+                    staging_service.process_staging_items(execucao_id, staging_items)
+                    db.commit()
+                    logger.info(f"Convertidos {len(staging_items)} registros de Staging.")
+                
+                # 2.2 Enriquecimento
+                from app.services.enrichment import EnrichmentService
+                movs = db.query(MovimentacaoBancaria).filter_by(execucao_id=execucao_id).all()
+                parcelas = db.query(ParcelaDespesa).all()
+                fornecedores = {f.id: f for f in db.query(Fornecedor).all()}
+                
+                EnrichmentService.enrich_movimentacoes(movs)
+                EnrichmentService.enrich_parcelas(parcelas, fornecedores)
+                db.commit()
+                logger.info("Enriquecimento de dados concluído.")
+                
+                # 2.3 Matching Engine
                 orchestrator = MatchOrchestrator(db, execucao_id=execucao_id)
                 stats = orchestrator.run_pipeline()
                 logger.info(f"Pipeline fase 2 concluído: {stats}")
