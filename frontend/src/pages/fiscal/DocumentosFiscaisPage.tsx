@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { FileText, Calculator, Landmark, AlertCircle } from 'lucide-react';
-import { getDocumentos, DocumentoFiscal, calcularRetencoes, gerarLancamentos } from '../../services/api/documentos';
+import { FileText, Calculator, Landmark, AlertCircle, RefreshCw } from 'lucide-react';
+import { getDocumentos, DocumentoFiscal, calcularRetencoes, gerarLancamentos, sincronizarDocumentos } from '../../services/api/documentos';
 
 export const DocumentosFiscaisPage: React.FC = () => {
   const [documentos, setDocumentos] = useState<DocumentoFiscal[]>([]);
@@ -53,6 +53,21 @@ export const DocumentosFiscaisPage: React.FC = () => {
     }
   };
 
+  const handleSincronizar = async () => {
+    try {
+      setLoading(true);
+      // Hardcoded dummy obra_id para fins de demonstração (tem que existir no banco, então simulamos que já sincronizamos obras e pegamos o ID de uma delas).
+      // Na vida real isso seria um dropdown de "Selecione a Obra para Sincronizar Notas"
+      const res = await sincronizarDocumentos("dummy-obra-id", "sienge");
+      alert(`Sincronização concluída! ${res.novos_documentos_importados} novos documentos importados.`);
+      await fetchDocumentos();
+    } catch (error) {
+      console.error('Failed to sync documentos', error);
+      alert('Erro ao sincronizar Documentos com o ERP Sienge. Certifique-se de sincronizar as Obras primeiro.');
+      setLoading(false);
+    }
+  };
+
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
   };
@@ -67,6 +82,16 @@ export const DocumentosFiscaisPage: React.FC = () => {
           <p className="text-gray-400 mt-1">
             Gestão de NF-e, NFS-e e RPA com cálculo automático de retenções e contabilidade.
           </p>
+        </div>
+        
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={handleSincronizar}
+            className="px-4 py-2 bg-white/5 hover:bg-white/10 text-gray-300 border border-white/10 rounded-xl font-medium transition-all flex items-center gap-2"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            Sincronizar Notas ERP
+          </button>
         </div>
       </div>
 

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Building2, Plus, Percent, MapPin, ReceiptText, HardHat } from 'lucide-react';
-import { getObras, Obra } from '../../services/api/obras';
+import { Building2, Plus, Percent, MapPin, ReceiptText, HardHat, RefreshCw } from 'lucide-react';
+import { getObras, Obra, sincronizarObras } from '../../services/api/obras';
 
 export const ObrasPage: React.FC = () => {
   const [obras, setObras] = useState<Obra[]>([]);
@@ -22,6 +22,20 @@ export const ObrasPage: React.FC = () => {
     }
   };
 
+  const handleSincronizar = async () => {
+    try {
+      setLoading(true);
+      // Hardcoded dummy empresa_id para fins de demonstração
+      const res = await sincronizarObras("32ecbd0c-25d2-43bb-a30f-b1eaf602ed05", "sienge");
+      alert(`Sincronização concluída! ${res.novas_obras_importadas} novas obras importadas.`);
+      await fetchObras();
+    } catch (error) {
+      console.error('Failed to sync obras', error);
+      alert('Erro ao sincronizar com o ERP Sienge.');
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -34,10 +48,20 @@ export const ObrasPage: React.FC = () => {
           </p>
         </div>
         
-        <button className="px-4 py-2 bg-primary-600 hover:bg-primary-500 text-white rounded-xl font-medium transition-all shadow-lg shadow-primary-500/20 flex items-center gap-2">
-          <Plus className="w-4 h-4" />
-          Nova Obra
-        </button>
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={handleSincronizar}
+            className="px-4 py-2 bg-white/5 hover:bg-white/10 text-gray-300 border border-white/10 rounded-xl font-medium transition-all flex items-center gap-2"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+            Sincronizar ERP
+          </button>
+          
+          <button className="px-4 py-2 bg-primary-600 hover:bg-primary-500 text-white rounded-xl font-medium transition-all shadow-lg shadow-primary-500/20 flex items-center gap-2">
+            <Plus className="w-4 h-4" />
+            Nova Obra
+          </button>
+        </div>
       </div>
 
       {loading ? (

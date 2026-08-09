@@ -57,3 +57,12 @@ export const atualizarAvancoFisico = async (id: string, percentual: number, cust
   const response = await api.patch(`/obras/${id}/avanco?${params.toString()}`);
   return response.data;
 };
+
+export const sincronizarObras = async (empresaId: string, erpName: string = 'sienge'): Promise<{ novas_obras_importadas: number }> => {
+  const params = new URLSearchParams();
+  params.append('empresa_id', empresaId);
+  params.append('erp_name', erpName);
+  
+  const response = await api.post(`/sincronizacao/obras?${params.toString()}`);
+  return response.data;
+};

@@ -72,3 +72,12 @@ export const gerarLancamentos = async (id: string, contaBancaria?: string): Prom
   const response = await api.post(`/documentos-fiscais/${id}/gerar-lancamentos?${params.toString()}`);
   return response.data;
 };
+
+export const sincronizarDocumentos = async (obraId: string, erpName: string = 'sienge'): Promise<{ novos_documentos_importados: number }> => {
+  const params = new URLSearchParams();
+  params.append('obra_id', obraId);
+  params.append('erp_name', erpName);
+  
+  const response = await api.post(`/sincronizacao/documentos?${params.toString()}`);
+  return response.data;
+};
