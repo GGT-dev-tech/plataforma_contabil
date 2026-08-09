@@ -12,6 +12,7 @@ import { AppShell } from '../components/layout/AppShell';
 import { StagingGrid } from '../pages/StagingGrid';
 import { WorkspaceSettings } from '../pages/WorkspaceSettings';
 import { DashboardClientes } from '../pages/DashboardClientes';
+import { CrmPage } from '../pages/crm/CrmPage';
 import { ObrasPage } from '../pages/obras/ObrasPage';
 import { DocumentosFiscaisPage } from '../pages/fiscal/DocumentosFiscaisPage';
 import { DashboardTributario } from '../pages/dashboard/DashboardTributario';
@@ -41,6 +42,7 @@ export const AppRouter: React.FC = () => {
               <Route path="/executions/new" element={<NewExecution />} />
               <Route path="/settings" element={<WorkspaceSettings />} />
               <Route path="/dashboard" element={<DashboardTributario />} />
+              <Route path="/crm" element={<CrmPage />} />
               <Route path="/obras" element={<ObrasPage />} />
               <Route path="/documentos-fiscais" element={<DocumentosFiscaisPage />} />
               <Route path="/exportacao-contabil" element={<ExportacaoContabilPage />} />

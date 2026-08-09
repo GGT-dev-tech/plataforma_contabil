@@ -48,13 +48,10 @@ export const Sidebar: React.FC = () => {
           <p className="px-4 text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3 flex items-center gap-2">
             <span className="w-2 h-[1px] bg-gray-500"></span> CRM
           </p>
-          <div className="relative group cursor-not-allowed">
-            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[9px] font-bold uppercase tracking-wider bg-white/10 text-gray-400 px-2 py-0.5 rounded-full">Em breve</div>
-            <div className={`${navItemClass({ isActive: false })} opacity-50 pointer-events-none`}>
-              <Users className="w-4 h-4 mr-3" />
-              Clientes & Propostas
-            </div>
-          </div>
+          <NavLink to="/crm" className={navItemClass}>
+            <Users className="w-4 h-4 mr-3" />
+            Clientes & Propostas
+          </NavLink>
         </div>
 
         <div>
