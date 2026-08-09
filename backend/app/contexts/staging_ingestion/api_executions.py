@@ -119,6 +119,32 @@ def run_pipeline(exec_id: str, db: Session = Depends(get_db), current_user: Usua
         runner.run(exec_id)
         return {"message": "Pipeline iniciada em background pelo Celery", "exec_id": exec_id, "status": "PROCESSING"}
 
+@router.post("/{exec_id}/approve-staging", status_code=202)
+def approve_staging(exec_id: str, db: Session = Depends(get_db), current_user: Usuario = Depends(get_current_user)):
+    """
+    Aprova os dados do Staging e inicia a Fase 2 (Conciliação).
+    """
+    if current_user.role not in [Role.ADMIN, Role.ANALISTA]:
+        raise HTTPException(status_code=403)
+        
+    with SQLAlchemyUnitOfWork(db) as uow:
+        execucao = uow.executions.get(uow.session, exec_id)
+        if not execucao: raise HTTPException(status_code=404)
+        if current_user.role != Role.ADMIN and execucao.empresa_id != current_user.empresa_id:
+            raise HTTPException(status_code=403, detail="Acesso negado a dados de outra empresa.")
+        
+        if execucao.status != StatusExecucao.AGUARDANDO_REVISAO_STAGING:
+            raise HTTPException(status_code=400, detail="Execução não está aguardando revisão do staging.")
+            
+        execucao.status = StatusExecucao.CONCILIANDO
+        uow.commit()
+        
+        # Despacha para o Celery para a Fase 2
+        runner = CeleryRunner()
+        runner.run(exec_id)
+        
+    return {"message": "Conciliação (Fase 2) iniciada com sucesso.", "exec_id": exec_id}
+
 @router.get("/{exec_id}/summary")
 def execution_summary(exec_id: str, db: Session = Depends(get_db), current_user: Usuario = Depends(get_current_user)):
     with SQLAlchemyUnitOfWork(db) as uow:

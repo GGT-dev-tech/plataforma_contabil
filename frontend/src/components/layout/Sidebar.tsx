@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Settings, Users, Receipt, Landmark, FileSpreadsheet, CheckCheck, Sparkles } from 'lucide-react';
+import { Settings, Users, Receipt, Landmark, FileSpreadsheet, CheckCheck, Sparkles, Building2 } from 'lucide-react';
 
 export const Sidebar: React.FC = () => {
   const navItemClass = ({ isActive }: { isActive: boolean }) => `
@@ -28,6 +28,13 @@ export const Sidebar: React.FC = () => {
       <nav className="flex-1 px-4 py-6 space-y-6 overflow-y-auto relative z-10 custom-scrollbar">
         
         <div>
+          <NavLink to="/" className={navItemClass}>
+            <Building2 className="w-4 h-4 mr-3" />
+            Hub de Clientes
+          </NavLink>
+        </div>
+        
+        <div>
           <p className="px-4 text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3 flex items-center gap-2">
             <span className="w-2 h-[1px] bg-gray-500"></span> Conciliações
           </p>
@@ -41,34 +48,46 @@ export const Sidebar: React.FC = () => {
           <p className="px-4 text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3 flex items-center gap-2">
             <span className="w-2 h-[1px] bg-gray-500"></span> CRM
           </p>
-          <NavLink to="/clientes" className={navItemClass}>
-            <Users className="w-4 h-4 mr-3" />
-            Clientes & Propostas
-          </NavLink>
+          <div className="relative group cursor-not-allowed">
+            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[9px] font-bold uppercase tracking-wider bg-white/10 text-gray-400 px-2 py-0.5 rounded-full">Em breve</div>
+            <div className={`${navItemClass({ isActive: false })} opacity-50 pointer-events-none`}>
+              <Users className="w-4 h-4 mr-3" />
+              Clientes & Propostas
+            </div>
+          </div>
         </div>
 
         <div>
           <p className="px-4 text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3 flex items-center gap-2">
             <span className="w-2 h-[1px] bg-gray-500"></span> Financeiro
           </p>
-          <NavLink to="/receitas-despesas" className={navItemClass}>
-            <Receipt className="w-4 h-4 mr-3" />
-            Receitas & Despesas
-          </NavLink>
-          <NavLink to="/contas" className={navItemClass}>
-            <Landmark className="w-4 h-4 mr-3" />
-            Contas & Dinheiro
-          </NavLink>
+          <div className="relative group cursor-not-allowed">
+            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[9px] font-bold uppercase tracking-wider bg-white/10 text-gray-400 px-2 py-0.5 rounded-full">Em breve</div>
+            <div className={`${navItemClass({ isActive: false })} opacity-50 pointer-events-none`}>
+              <Receipt className="w-4 h-4 mr-3" />
+              Receitas & Despesas
+            </div>
+          </div>
+          <div className="relative group cursor-not-allowed">
+            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[9px] font-bold uppercase tracking-wider bg-white/10 text-gray-400 px-2 py-0.5 rounded-full">Em breve</div>
+            <div className={`${navItemClass({ isActive: false })} opacity-50 pointer-events-none`}>
+              <Landmark className="w-4 h-4 mr-3" />
+              Contas & Dinheiro
+            </div>
+          </div>
         </div>
 
         <div>
           <p className="px-4 text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3 flex items-center gap-2">
             <span className="w-2 h-[1px] bg-gray-500"></span> Contábil
           </p>
-          <NavLink to="/razao" className={navItemClass}>
-            <FileSpreadsheet className="w-4 h-4 mr-3" />
-            Razão & Apuração Fiscal
-          </NavLink>
+          <div className="relative group cursor-not-allowed">
+            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-[9px] font-bold uppercase tracking-wider bg-white/10 text-gray-400 px-2 py-0.5 rounded-full">Em breve</div>
+            <div className={`${navItemClass({ isActive: false })} opacity-50 pointer-events-none`}>
+              <FileSpreadsheet className="w-4 h-4 mr-3" />
+              Razão & Apuração Fiscal
+            </div>
+          </div>
         </div>
       </nav>
       

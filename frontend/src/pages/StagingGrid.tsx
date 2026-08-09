@@ -77,7 +77,7 @@ export const StagingGrid: React.FC = () => {
   const handleProcessStaging = async () => {
     try {
       setProcessing(true);
-      await api.post(`/executions/${id}/staging/process`);
+      await api.post(`/executions/${id}/approve-staging`);
       navigate(`/executions/${id}`);
     } catch (err) {
       console.error('Erro ao processar staging:', err);
@@ -120,7 +120,7 @@ export const StagingGrid: React.FC = () => {
               className="glass-button-primary flex items-center gap-2"
             >
               {processing ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
-              <span>Processar</span>
+              <span>Aprovar e Iniciar Conciliação</span>
             </button>
           </div>
         }

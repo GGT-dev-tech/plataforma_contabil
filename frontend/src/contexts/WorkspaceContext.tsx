@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import { apiClient } from '../services/api';
 
 interface Workspace {
   id: string;
@@ -14,6 +15,7 @@ interface WorkspaceContextType {
   setActiveWorkspaceId: (id: string | null) => void;
   activeWorkspace: Workspace | null;
   isLoading: boolean;
+  refreshWorkspaces: () => Promise<void>;
 }
 
 const WorkspaceContext = createContext<WorkspaceContextType | undefined>(undefined);
@@ -23,33 +25,32 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [activeWorkspaceId, setActiveWorkspaceIdState] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Carrega as empresas da API
-  useEffect(() => {
-    const fetchWorkspaces = async () => {
-      try {
-        const response = await fetch('http://localhost:8000/api/v1/workspaces/empresas');
-        if (response.ok) {
-          const data = await response.json();
-          setWorkspaces(data);
-          
-          // Tenta recuperar do localStorage, se não, pega o primeiro da lista
-          const savedId = localStorage.getItem('activeWorkspaceId');
-          if (savedId && data.find((w: Workspace) => w.id === savedId)) {
-            setActiveWorkspaceIdState(savedId);
-          } else if (data.length > 0) {
-            setActiveWorkspaceIdState(data[0].id);
-            localStorage.setItem('activeWorkspaceId', data[0].id);
-          }
-        }
-      } catch (error) {
-        console.error("Erro ao carregar workspaces:", error);
-      } finally {
-        setIsLoading(false);
+  const fetchWorkspaces = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const response = await apiClient.get('/workspaces/empresas');
+      const data = response.data;
+      setWorkspaces(data);
+      
+      const savedId = localStorage.getItem('activeWorkspaceId');
+      if (savedId && data.find((w: Workspace) => w.id === savedId)) {
+        setActiveWorkspaceIdState(savedId);
+      } else {
+        // Do not auto-select the first workspace anymore. 
+        // We want the user to go to the Dashboard and choose.
+        setActiveWorkspaceIdState(null);
+        localStorage.removeItem('activeWorkspaceId');
       }
-    };
-
-    fetchWorkspaces();
+    } catch (error) {
+      console.error("Erro ao carregar workspaces:", error);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchWorkspaces();
+  }, [fetchWorkspaces]);
 
   const setActiveWorkspaceId = (id: string | null) => {
     setActiveWorkspaceIdState(id);
@@ -63,7 +64,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const activeWorkspace = workspaces.find(w => w.id === activeWorkspaceId) || null;
 
   return (
-    <WorkspaceContext.Provider value={{ workspaces, activeWorkspaceId, setActiveWorkspaceId, activeWorkspace, isLoading }}>
+    <WorkspaceContext.Provider value={{ workspaces, activeWorkspaceId, setActiveWorkspaceId, activeWorkspace, isLoading, refreshWorkspaces: fetchWorkspaces }}>
       {children}
     </WorkspaceContext.Provider>
   );

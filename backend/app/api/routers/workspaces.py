@@ -19,6 +19,11 @@ class EmpresaResponse(BaseModel):
     class Config:
         from_attributes = True
 
+class EmpresaCreate(BaseModel):
+    cnpj: str
+    razao_social: str
+    nome_fantasia: str
+
 class MappingResponse(BaseModel):
     id: str
     file_signature: str
@@ -43,6 +48,38 @@ def listar_empresas_do_usuario(
         empresas = db.query(Empresa).filter(Empresa.id == current_user.empresa_id).all()
         
     return empresas
+
+@router.post("/empresas", response_model=EmpresaResponse, status_code=201)
+def criar_empresa(
+    payload: EmpresaCreate,
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
+):
+    """
+    Cadastra uma nova Empresa (Workspace). 
+    Somente ADMINS podem cadastrar novas empresas livremente.
+    """
+    if current_user.role != "ADMIN":
+        raise HTTPException(status_code=403, detail="Apenas administradores podem cadastrar novos clientes.")
+        
+    # Verificar se já existe CNPJ
+    empresa_existente = db.query(Empresa).filter(Empresa.cnpj == payload.cnpj).first()
+    if empresa_existente:
+        raise HTTPException(status_code=400, detail="Empresa com este CNPJ já cadastrada.")
+        
+    import uuid
+    nova_empresa = Empresa(
+        id=str(uuid.uuid4()),
+        cnpj=payload.cnpj,
+        razao_social=payload.razao_social,
+        nome_fantasia=payload.nome_fantasia
+    )
+    
+    db.add(nova_empresa)
+    db.commit()
+    db.refresh(nova_empresa)
+    
+    return nova_empresa
 
 @router.put("/empresas/{empresa_id}/import-config")
 def atualizar_import_config(

@@ -12,6 +12,7 @@ import { AppShell } from '../components/layout/AppShell';
 
 import { StagingGrid } from '../pages/StagingGrid';
 import { WorkspaceSettings } from '../pages/WorkspaceSettings';
+import { DashboardClientes } from '../pages/DashboardClientes';
 
 export const AppRouter: React.FC = () => {
   return (
@@ -20,7 +21,7 @@ export const AppRouter: React.FC = () => {
         <Route path="/login" element={<Login />} />
         
         <Route element={<ProtectedRoute />}>
-          <Route path="/" element={<Navigate to="/executions" replace />} />
+          <Route path="/" element={<DashboardClientes />} />
           <Route path="/unauthorized" element={<div className="p-12 text-center text-xl">Acesso Negado</div>} />
           
           <Route element={<AppShell />}>
