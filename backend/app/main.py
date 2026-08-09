@@ -11,6 +11,7 @@ from app.contexts.matching_auditing.api_matching import router as matching_route
 from app.contexts.obras.api_obras import router as obras_router
 from app.contexts.obras.api_documentos_fiscais import router as documentos_fiscais_router
 from app.api.routers.exportacao import router as exportacao_router
+from app.api.routers.financeiro import router as financeiro_router
 from app.api.routers.sincronizacao import router as sincronizacao_router
 from app.api.routers.analytics import router as analytics_router
 from app.api.routers.auth import router as auth_router
@@ -57,6 +58,7 @@ app.include_router(workspaces.router, prefix="/api/v1")
 app.include_router(obras_router, prefix="/api/v1")
 app.include_router(documentos_fiscais_router, prefix="/api/v1")
 app.include_router(exportacao_router, prefix="/api/v1")
+app.include_router(financeiro_router, prefix="/api/v1")
 app.include_router(sincronizacao_router, prefix="/api/v1")
 app.include_router(analytics_router, prefix="/api/v1")
 app.include_router(auth_router, prefix="/api/v1")

@@ -26,6 +26,7 @@ from app.models.documento_fiscal import (
     NaturezaOperacao,
     StatusDocumentoFiscal,
 )
+from app.models.financeiro import TituloFinanceiro, TipoTitulo, StatusTitulo
 from app.services.motor_fiscal import MotorFiscal
 from app.services.gerador_lancamentos import GeradorLancamentos
 
@@ -191,6 +192,30 @@ def calcular_retencoes(
 
     db.commit()
     db.refresh(doc)
+    
+    # Auto-gerar Título a Pagar
+    titulo_existente = db.query(TituloFinanceiro).filter(TituloFinanceiro.documento_fiscal_id == doc.id).first()
+    if not titulo_existente:
+        import datetime
+        data_vencimento = doc.data_emissao + datetime.timedelta(days=30) if doc.data_emissao else datetime.date.today()
+        
+        titulo = TituloFinanceiro(
+            id=str(uuid.uuid4()),
+            empresa_id=doc.empresa_id,
+            obra_id=doc.obra_id,
+            documento_fiscal_id=doc.id,
+            tipo=TipoTitulo.PAGAR,
+            status=StatusTitulo.ABERTO,
+            descricao=f"NF {doc.numero or 'S/N'} - {doc.emitente_nome or 'Desconhecido'}",
+            fornecedor_cliente_nome=doc.emitente_nome,
+            fornecedor_cliente_cnpj_cpf=doc.emitente_cnpj_cpf,
+            valor_nominal=float(resultado.valor_liquido_pagar),
+            data_emissao=doc.data_emissao or datetime.date.today(),
+            data_vencimento=data_vencimento,
+            gerado_automaticamente=True
+        )
+        db.add(titulo)
+        db.commit()
 
     return {
         **_doc_to_dict(doc),
