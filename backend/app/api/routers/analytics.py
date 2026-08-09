@@ -20,8 +20,4 @@ def get_dashboard_data(
     """
     service = AnalyticsService(db)
     
-    return {
-        "retencoes": service.get_resumo_retencoes(empresa_id),
-        "obras_regime": service.get_obras_por_regime(empresa_id),
-        "evolucao": service.get_evolucao_documentos(empresa_id)
-    }
+    return service.get_dashboard_geral(empresa_id)

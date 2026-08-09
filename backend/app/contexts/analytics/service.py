@@ -1,19 +1,19 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from typing import Dict, Any, List
+import datetime
 
 from app.models.obra import Obra
 from app.models.documento_fiscal import DocumentoFiscalV2
+from app.models.financeiro import TituloFinanceiro, TipoTitulo
+from app.models.crm import PropostaVenda, StatusProposta
+from app.models.tesouraria import TesourariaContaBancaria
 
 class AnalyticsService:
     def __init__(self, db: Session):
         self.db = db
         
     def get_resumo_retencoes(self, empresa_id: str) -> Dict[str, float]:
-        """
-        Retorna a soma total das retenções para uma empresa,
-        idealmente podendo ser filtrada por mês (aqui pegamos o total).
-        """
         resultado = self.db.query(
             func.sum(DocumentoFiscalV2.iss_valor).label("total_iss"),
             func.sum(DocumentoFiscalV2.inss_valor).label("total_inss"),
@@ -29,9 +29,6 @@ class AnalyticsService:
         }
         
     def get_obras_por_regime(self, empresa_id: str) -> List[Dict[str, Any]]:
-        """
-        Retorna o número de obras agrupado por regime tributário (RET vs NORMAL).
-        """
         resultados = self.db.query(
             Obra.regime_tributario,
             func.count(Obra.id).label("quantidade")
@@ -45,32 +42,34 @@ class AnalyticsService:
             for r in resultados
         ]
         
-    def get_evolucao_documentos(self, empresa_id: str) -> List[Dict[str, Any]]:
-        """
-        Retorna a evolução do valor bruto dos documentos por data de emissão.
-        """
-        # Em SQLite não tem func.date_trunc, então vamos simplificar para agrupar pela data exata, 
-        # mas como estamos no Postgres, date_trunc("month", data_emissao) funcionaria.
-        # Vamos agrupar de forma simplificada por data de emissão
-        resultados = self.db.query(
-            DocumentoFiscalV2.data_emissao,
-            func.sum(DocumentoFiscalV2.valor_bruto).label("total")
-        ).filter(
-            DocumentoFiscalV2.empresa_id == empresa_id,
-            DocumentoFiscalV2.data_emissao != None
-        ).group_by(
-            DocumentoFiscalV2.data_emissao
-        ).order_by(
-            DocumentoFiscalV2.data_emissao
-        ).all()
+    def get_dashboard_geral(self, empresa_id: str) -> Dict[str, Any]:
+        # 1. Saldo Consolidado em Caixa
+        saldo_caixa = self.db.query(func.sum(TesourariaContaBancaria.saldo_atual)).filter(
+            TesourariaContaBancaria.empresa_id == empresa_id
+        ).scalar() or 0.0
+
+        # 2. Receitas e Despesas (Mês Atual Simplificado)
+        # Em SQLite isso pegaria tudo. Num BD real, faríamos um filtro de mês.
+        receitas = self.db.query(func.sum(TituloFinanceiro.valor)).filter(
+            TituloFinanceiro.empresa_id == empresa_id,
+            TituloFinanceiro.tipo == TipoTitulo.RECEITA
+        ).scalar() or 0.0
         
-        # Agrupa por mês para o chart do Recharts
-        evolucao_por_mes = {}
-        for r in resultados:
-            if not r.data_emissao:
-                continue
-            mes_ano = r.data_emissao.strftime("%m/%Y")
-            evolucao_por_mes[mes_ano] = evolucao_por_mes.get(mes_ano, 0) + float(r.total or 0)
-            
-        lista_final = [{"name": mes, "valor": val} for mes, val in evolucao_por_mes.items()]
-        return lista_final
+        despesas = self.db.query(func.sum(TituloFinanceiro.valor)).filter(
+            TituloFinanceiro.empresa_id == empresa_id,
+            TituloFinanceiro.tipo == TipoTitulo.DESPESA
+        ).scalar() or 0.0
+
+        # 3. VGV (Valor Geral de Vendas) de Propostas Aprovadas
+        vgv = self.db.query(func.sum(PropostaVenda.valor_negociado)).filter(
+            PropostaVenda.empresa_id == empresa_id,
+            PropostaVenda.status == StatusProposta.APROVADA
+        ).scalar() or 0.0
+
+        return {
+            "saldo_consolidado": float(saldo_caixa),
+            "total_receitas": float(receitas),
+            "total_despesas": float(despesas),
+            "vgv_aprovado": float(vgv),
+            "lucro_operacional": float(receitas - despesas)
+        }

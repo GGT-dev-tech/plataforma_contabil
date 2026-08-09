@@ -16,7 +16,7 @@ import { CrmPage } from '../pages/crm/CrmPage';
 import { ObrasPage } from '../pages/obras/ObrasPage';
 import { DocumentosFiscaisPage } from '../pages/fiscal/DocumentosFiscaisPage';
 import { TesourariaPage } from '../pages/financeiro/TesourariaPage';
-import { DashboardTributario } from '../pages/dashboard/DashboardTributario';
+import { DashboardHome } from '../pages/dashboard/DashboardHome';
 import { ExportacaoContabilPage } from '../pages/exportacao/ExportacaoContabilPage';
 import { ReceitasDespesasPage } from '../pages/financeiro/ReceitasDespesasPage';
 
@@ -42,7 +42,7 @@ export const AppRouter: React.FC = () => {
             <Route element={<ProtectedRoute />}>
               <Route path="/executions/new" element={<NewExecution />} />
               <Route path="/settings" element={<WorkspaceSettings />} />
-              <Route path="/dashboard" element={<DashboardTributario />} />
+              <Route path="/dashboard" element={<DashboardHome />} />
               <Route path="/crm" element={<CrmPage />} />
               <Route path="/tesouraria" element={<TesourariaPage />} />
               <Route path="/obras" element={<ObrasPage />} />
