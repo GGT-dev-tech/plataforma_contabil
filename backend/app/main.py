@@ -8,6 +8,9 @@ from app.contexts.identity.api import router as auth_router
 from app.contexts.staging_ingestion.api_executions import router as staging_executions_router
 from app.contexts.staging_ingestion.api_staging import router as staging_router
 from app.contexts.matching_auditing.api_matching import router as matching_router
+from app.contexts.obras.api_obras import router as obras_router
+from app.contexts.obras.api_documentos_fiscais import router as documentos_fiscais_router
+from app.api.routers.exportacao import router as exportacao_router
 from app.core.config import settings
 from app.api.deps import get_db
 
@@ -48,6 +51,9 @@ app.include_router(staging_executions_router, prefix="/api/v1")
 app.include_router(staging_router, prefix="/api/v1")
 app.include_router(matching_router, prefix="/api/v1")
 app.include_router(workspaces.router, prefix="/api/v1")
+app.include_router(obras_router, prefix="/api/v1")
+app.include_router(documentos_fiscais_router, prefix="/api/v1")
+app.include_router(exportacao_router, prefix="/api/v1")
 
 @app.get("/health")
 def health_check(db: Session = Depends(get_db)):

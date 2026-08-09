@@ -17,7 +17,7 @@ from datetime import date
 from typing import List, Optional
 from sqlalchemy.orm import Session
 
-from app.models.documento_fiscal import DocumentoFiscal, NaturezaOperacao, TipoDocumentoFiscal
+from app.models.documento_fiscal import DocumentoFiscalV2, NaturezaOperacao, TipoDocumentoFiscal
 from app.models.lancamento_v2 import LancamentoContabilV2, TipoPartida, StatusLancamento, TemplateLancamento
 from app.services.motor_fiscal import MotorFiscal, ResultadoCalculo
 
@@ -63,7 +63,7 @@ class GeradorLancamentos:
     Gera lançamentos contábeis em partida dobrada a partir de eventos financeiros.
     
     Fluxo:
-    1. Recebe DocumentoFiscal validado
+    1. Recebe DocumentoFiscalV2 validado
     2. Consulta TemplateLancamento para a natureza/tipo
     3. Usa MotorFiscal para calcular retenções
     4. Gera LancamentoContabilV2 balanceados (sum(D) = sum(C))
@@ -76,7 +76,7 @@ class GeradorLancamentos:
 
     def gerar_para_documento(
         self,
-        documento: DocumentoFiscal,
+        documento: DocumentoFiscalV2,
         execucao_id: Optional[str] = None,
         conta_bancaria_codigo: Optional[str] = None,
         conta_custo_override: Optional[str] = None,
@@ -224,7 +224,7 @@ class GeradorLancamentos:
         }
         return mapeamento.get(natureza, _conta("despesa_administrativa"))
 
-    def _historico(self, doc: DocumentoFiscal) -> str:
+    def _historico(self, doc: DocumentoFiscalV2) -> str:
         partes = []
         if doc.tipo:
             partes.append(doc.tipo.value)

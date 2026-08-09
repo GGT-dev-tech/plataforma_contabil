@@ -58,7 +58,7 @@ class StatusDocumentoFiscal(str, enum.Enum):
     AGUARDANDO_NF = "AGUARDANDO_NF"  # Serviço executado, aguarda emissão de NF
 
 
-class DocumentoFiscal(AuditableBase):
+class DocumentoFiscalV2(AuditableBase):
     """
     Entidade central de toda operação financeira com terceiros.
     
@@ -193,5 +193,5 @@ class ParcelaDocumentoFiscal(AuditableBase):
     # ID de origem no ERP (para idempotência)
     id_externo_erp = Column(String(100), nullable=True, index=True)
 
-    documento = relationship("DocumentoFiscal", back_populates="parcelas")
+    documento = relationship("DocumentoFiscalV2", back_populates="parcelas")
     movimentacao = relationship("MovimentacaoBancaria")

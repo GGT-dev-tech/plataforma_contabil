@@ -13,6 +13,8 @@ import { AppShell } from '../components/layout/AppShell';
 import { StagingGrid } from '../pages/StagingGrid';
 import { WorkspaceSettings } from '../pages/WorkspaceSettings';
 import { DashboardClientes } from '../pages/DashboardClientes';
+import { ObrasPage } from '../pages/obras/ObrasPage';
+import { DocumentosFiscaisPage } from '../pages/fiscal/DocumentosFiscaisPage';
 
 export const AppRouter: React.FC = () => {
   return (
@@ -36,6 +38,8 @@ export const AppRouter: React.FC = () => {
             <Route element={<ProtectedRoute allowedRoles={PERMISSIONS.CAN_CREATE_EXECUTION} />}>
               <Route path="/executions/new" element={<NewExecution />} />
               <Route path="/settings" element={<WorkspaceSettings />} />
+              <Route path="/obras" element={<ObrasPage />} />
+              <Route path="/documentos-fiscais" element={<DocumentosFiscaisPage />} />
             </Route>
           </Route>
         </Route>

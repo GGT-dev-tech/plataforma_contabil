@@ -104,7 +104,7 @@ class Obra(AuditableBase):
 
     # Relacionamentos
     empresa = relationship("Empresa")
-    documentos_fiscais = relationship("DocumentoFiscal", back_populates="obra")
+    documentos_fiscais = relationship("DocumentoFiscalV2", back_populates="obra")
 
 
 class Subempreiteiro(AuditableBase):

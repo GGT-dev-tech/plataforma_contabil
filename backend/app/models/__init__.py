@@ -31,7 +31,7 @@ from .domain import (
 from .empresa_fiscal import EmpresaFiscal, RegimeTributario
 from .obra import Obra, Subempreiteiro, RegimeTributarioObra, StatusObra, TipoObra
 from .documento_fiscal import (
-    DocumentoFiscal as DocumentoFiscalV2,   # alias para evitar colisão com legado
+    DocumentoFiscalV2,
     ParcelaDocumentoFiscal,
     TipoDocumentoFiscal,
     NaturezaOperacao,

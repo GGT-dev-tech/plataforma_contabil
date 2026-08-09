@@ -106,7 +106,7 @@ class LancamentoContabilV2(AuditableBase):
     # Relacionamentos
     empresa = relationship("Empresa")
     obra = relationship("Obra")
-    documento_fiscal = relationship("DocumentoFiscal", back_populates="lancamentos")
+    documento_fiscal = relationship("DocumentoFiscalV2", back_populates="lancamentos")
     conciliacao = relationship("Conciliacao")
 
 
