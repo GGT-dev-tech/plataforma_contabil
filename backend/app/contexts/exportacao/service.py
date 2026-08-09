@@ -3,15 +3,17 @@ from sqlalchemy.orm import Session
 from app.models.lancamento_v2 import LancamentoContabilV2
 from app.contexts.exportacao.adapters.base import ExportAdapter
 from app.contexts.exportacao.adapters.dominio_sistemas import DominioSistemasAdapter
+from app.contexts.exportacao.adapters.sped_ecd import SpedEcdAdapter
 
 class ExportacaoService:
     def __init__(self, db: Session):
         self.db = db
         self.adapters = {
-            "dominio_sistemas": DominioSistemasAdapter()
+            "dominio_sistemas": DominioSistemasAdapter(),
+            "sped_ecd": SpedEcdAdapter()
         }
         
-    def obter_lancamentos(self, empresa_id: Optional[str] = None, obra_id: Optional[str] = None) -> List[LancamentoContabilV2]:
+    def obter_lancamentos(self, empresa_id: Optional[str] = None, obra_id: Optional[str] = None, data_inicio: Optional[str] = None, data_fim: Optional[str] = None) -> List[LancamentoContabilV2]:
         query = self.db.query(LancamentoContabilV2).filter(LancamentoContabilV2.is_deleted == False)
         
         if empresa_id:
@@ -20,14 +22,20 @@ class ExportacaoService:
         if obra_id:
             query = query.filter(LancamentoContabilV2.obra_id == obra_id)
             
+        if data_inicio:
+            query = query.filter(LancamentoContabilV2.data_lancamento >= data_inicio)
+            
+        if data_fim:
+            query = query.filter(LancamentoContabilV2.data_lancamento <= data_fim)
+            
         return query.order_by(LancamentoContabilV2.data_lancamento, LancamentoContabilV2.id).all()
         
-    def exportar_arquivos(self, formato: str, empresa_id: Optional[str] = None, obra_id: Optional[str] = None) -> bytes:
+    def exportar_arquivos(self, formato: str, empresa_id: Optional[str] = None, obra_id: Optional[str] = None, data_inicio: Optional[str] = None, data_fim: Optional[str] = None) -> bytes:
         if formato not in self.adapters:
             raise ValueError(f"Formato de exportação '{formato}' não suportado.")
             
         adapter: ExportAdapter = self.adapters[formato]
-        lancamentos = self.obter_lancamentos(empresa_id, obra_id)
+        lancamentos = self.obter_lancamentos(empresa_id, obra_id, data_inicio, data_fim)
         
         if not lancamentos:
             raise ValueError("Não há lançamentos contábeis para exportar com os filtros informados.")

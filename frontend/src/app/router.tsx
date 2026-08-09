@@ -15,6 +15,7 @@ import { DashboardClientes } from '../pages/DashboardClientes';
 import { ObrasPage } from '../pages/obras/ObrasPage';
 import { DocumentosFiscaisPage } from '../pages/fiscal/DocumentosFiscaisPage';
 import { DashboardTributario } from '../pages/dashboard/DashboardTributario';
+import { ExportacaoContabilPage } from '../pages/exportacao/ExportacaoContabilPage';
 
 export const AppRouter: React.FC = () => {
   return (
@@ -41,6 +42,7 @@ export const AppRouter: React.FC = () => {
               <Route path="/dashboard" element={<DashboardTributario />} />
               <Route path="/obras" element={<ObrasPage />} />
               <Route path="/documentos-fiscais" element={<DocumentosFiscaisPage />} />
+              <Route path="/exportacao-contabil" element={<ExportacaoContabilPage />} />
             </Route>
           </Route>
         </Route>

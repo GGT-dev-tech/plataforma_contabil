@@ -16,6 +16,8 @@ def exportar_lancamentos(
     formato: str = Query("dominio_sistemas", description="Formato de exportação (ex: dominio_sistemas)"),
     empresa_id: Optional[str] = Query(None, description="Filtrar por empresa"),
     obra_id: Optional[str] = Query(None, description="Filtrar por obra"),
+    data_inicio: Optional[str] = Query(None, description="Filtrar por data inicio (YYYY-MM-DD)"),
+    data_fim: Optional[str] = Query(None, description="Filtrar por data fim (YYYY-MM-DD)"),
     db: Session = Depends(get_db)
 ):
     """
@@ -25,7 +27,7 @@ def exportar_lancamentos(
     service = ExportacaoService(db)
     
     try:
-        conteudo_bytes = service.exportar_arquivos(formato, empresa_id, obra_id)
+        conteudo_bytes = service.exportar_arquivos(formato, empresa_id, obra_id, data_inicio, data_fim)
         
         extensao = "txt"
         if formato in service.adapters:
