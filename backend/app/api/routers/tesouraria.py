@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from app.api.deps import get_db
 from app.contexts.identity.auth_utils import get_current_user
 from app.models.domain import Usuario, Role
-from app.models.tesouraria import ContaBancaria, TransacaoBancaria, TipoTransacao
+from app.models.tesouraria import TesourariaContaBancaria, TesourariaTransacao, TipoTransacao
 
 router = APIRouter(prefix="/tesouraria", tags=["tesouraria"])
 
@@ -25,7 +25,7 @@ class TransacaoCreate(BaseModel):
     valor: float
     descricao: str
 
-def _conta_to_dict(c: ContaBancaria) -> dict:
+def _conta_to_dict(c: TesourariaContaBancaria) -> dict:
     return {
         "id": str(c.id),
         "banco": c.banco,
@@ -35,7 +35,7 @@ def _conta_to_dict(c: ContaBancaria) -> dict:
         "saldo_atual": float(c.saldo_atual)
     }
 
-def _transacao_to_dict(t: TransacaoBancaria, conta_desc: str = "") -> dict:
+def _transacao_to_dict(t: TesourariaTransacao, conta_desc: str = "") -> dict:
     return {
         "id": str(t.id),
         "conta_bancaria_id": str(t.conta_bancaria_id),
@@ -51,9 +51,9 @@ def list_contas(
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(get_current_user)
 ):
-    query = db.query(ContaBancaria)
+    query = db.query(TesourariaContaBancaria)
     if current_user.role != Role.ADMIN:
-        query = query.filter(ContaBancaria.empresa_id == current_user.empresa_id)
+        query = query.filter(TesourariaContaBancaria.empresa_id == current_user.empresa_id)
     contas = query.all()
     return [_conta_to_dict(c) for c in contas]
 
@@ -66,7 +66,7 @@ def create_conta(
     if not current_user.empresa_id and current_user.role != Role.ADMIN:
         raise HTTPException(status_code=403, detail="Usuário sem empresa vinculada.")
         
-    conta = ContaBancaria(
+    conta = TesourariaContaBancaria(
         empresa_id=current_user.empresa_id,
         banco=payload.banco,
         agencia=payload.agencia,
@@ -85,15 +85,15 @@ def list_transacoes(
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(get_current_user)
 ):
-    query = db.query(TransacaoBancaria, ContaBancaria).join(ContaBancaria, TransacaoBancaria.conta_bancaria_id == ContaBancaria.id)
+    query = db.query(TesourariaTransacao, TesourariaContaBancaria).join(TesourariaContaBancaria, TesourariaTransacao.conta_bancaria_id == TesourariaContaBancaria.id)
     
     if current_user.role != Role.ADMIN:
-        query = query.filter(TransacaoBancaria.empresa_id == current_user.empresa_id)
+        query = query.filter(TesourariaTransacao.empresa_id == current_user.empresa_id)
         
     if conta_id:
-        query = query.filter(TransacaoBancaria.conta_bancaria_id == conta_id)
+        query = query.filter(TesourariaTransacao.conta_bancaria_id == conta_id)
         
-    results = query.order_by(TransacaoBancaria.data_transacao.desc()).limit(100).all()
+    results = query.order_by(TesourariaTransacao.data_transacao.desc()).limit(100).all()
     return [_transacao_to_dict(t, c.descricao) for t, c in results]
 
 @router.post("/transacoes", response_model=dict, status_code=201)
@@ -102,13 +102,13 @@ def create_transacao(
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(get_current_user)
 ):
-    conta = db.query(ContaBancaria).filter(ContaBancaria.id == payload.conta_bancaria_id).first()
+    conta = db.query(TesourariaContaBancaria).filter(TesourariaContaBancaria.id == payload.conta_bancaria_id).first()
     if not conta:
         raise HTTPException(status_code=404, detail="Conta não encontrada.")
     if current_user.role != Role.ADMIN and str(conta.empresa_id) != str(current_user.empresa_id):
         raise HTTPException(status_code=403)
         
-    transacao = TransacaoBancaria(
+    transacao = TesourariaTransacao(
         empresa_id=conta.empresa_id,
         conta_bancaria_id=conta.id,
         data_transacao=payload.data_transacao,

@@ -9,11 +9,11 @@ class TipoTransacao(str, enum.Enum):
     ENTRADA = "ENTRADA"
     SAIDA = "SAIDA"
 
-class ContaBancaria(AuditableBase):
+class TesourariaContaBancaria(AuditableBase):
     """
     Representa uma conta corrente ou caixa da Construtora.
     """
-    __tablename__ = 'contas_bancarias'
+    __tablename__ = 'tesouraria_contas'
     
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     empresa_id = Column(UUID(as_uuid=True), ForeignKey('empresas.id'), index=True, nullable=False)
@@ -24,14 +24,14 @@ class ContaBancaria(AuditableBase):
     descricao = Column(String(255), nullable=False)
     saldo_atual = Column(Float, default=0.0, nullable=False)
 
-class TransacaoBancaria(AuditableBase):
+class TesourariaTransacao(AuditableBase):
     """
     Representa uma movimentação no extrato bancário.
     """
-    __tablename__ = 'transacoes_bancarias'
+    __tablename__ = 'tesouraria_transacoes'
     
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
-    conta_bancaria_id = Column(String(36), ForeignKey('contas_bancarias.id'), index=True, nullable=False)
+    conta_bancaria_id = Column(String(36), ForeignKey('tesouraria_contas.id'), index=True, nullable=False)
     empresa_id = Column(UUID(as_uuid=True), ForeignKey('empresas.id'), index=True, nullable=False)
     
     data_transacao = Column(Date, nullable=False)
