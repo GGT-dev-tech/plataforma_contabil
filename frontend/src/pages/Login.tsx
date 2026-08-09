@@ -49,7 +49,16 @@ export const Login: React.FC = () => {
       login(data.access_token, user);
       navigate('/');
     } catch (err: any) {
-      setError(err.message || 'Erro ao realizar login');
+      console.error("Erro de Login capturado:", err);
+      let errorMsg = err.message || 'Erro ao realizar login';
+      
+      if (err instanceof SyntaxError || errorMsg.includes('Unexpected token')) {
+        errorMsg = 'Erro de conexão com a API. Verifique se a variável VITE_API_URL no Frontend está apontando para a URL correta do Backend no Railway.';
+      } else if (errorMsg === 'Failed to fetch') {
+        errorMsg = 'Falha de rede (CORS ou Backend fora do ar). Verifique as variáveis VITE_API_URL no Frontend e CORS_ORIGINS no Backend.';
+      }
+      
+      setError(errorMsg);
     } finally {
       setIsLoading(false);
     }
