@@ -47,14 +47,16 @@ def execute_pipeline_core(execucao_id: str, db: Session):
                 
             if execucao.status == StatusExecucao.PROCESSANDO:
                 # ETAPA 1: Parsing para Staging
-                from app.models.domain import ImportacaoArquivo
+                from app.models.domain import ImportacaoArquivo, Empresa
                 importacoes = db.query(ImportacaoArquivo).filter(ImportacaoArquivo.execucao_id == execucao_id).all()
+                empresa = db.query(Empresa).filter(Empresa.id == execucao.empresa_id).first()
+                import_config = empresa.import_config if empresa else None
                 
                 from app.contexts.staging_ingestion.parsers import ParserFactory
                 
                 for imp in importacoes:
                     logger.info(f"Procurando parser para o arquivo {imp.tipo} - {imp.nome_original}")
-                    parser = ParserFactory.get_parser(imp.storage_path, imp.tipo)
+                    parser = ParserFactory.get_parser(imp.storage_path, imp.tipo, import_config=import_config)
                     if parser:
                         logger.info(f"Parser encontrado: {parser.__class__.__name__}. Iniciando processamento...")
                         parser.parse(imp.storage_path, db, execucao_id)

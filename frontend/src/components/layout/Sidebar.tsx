@@ -72,9 +72,13 @@ export const Sidebar: React.FC = () => {
         </div>
       </nav>
       
-      <div className="p-4 border-t border-white/10 relative z-10">
-        <NavLink to="/ui" className={navItemClass}>
+      <div className="p-4 border-t border-white/10 relative z-10 flex flex-col gap-2">
+        <NavLink to="/settings" className={navItemClass}>
           <Settings className="w-4 h-4 mr-3" />
+          Configurações
+        </NavLink>
+        <NavLink to="/ui" className={navItemClass}>
+          <Sparkles className="w-4 h-4 mr-3" />
           Design System UI
         </NavLink>
       </div>

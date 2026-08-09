@@ -5,6 +5,7 @@ interface Workspace {
   cnpj: string;
   razao_social: string;
   nome_fantasia: string;
+  import_config?: Record<string, any> | null;
 }
 
 interface WorkspaceContextType {

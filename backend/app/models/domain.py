@@ -26,6 +26,7 @@ class Empresa(AuditableBase):
     cnpj = Column(String, unique=True, index=True)
     razao_social = Column(String)
     nome_fantasia = Column(String)
+    import_config = Column(JSON, nullable=True)
 
 class ClientSchemaMapping(AuditableBase):
     __tablename__ = 'client_schema_mappings'

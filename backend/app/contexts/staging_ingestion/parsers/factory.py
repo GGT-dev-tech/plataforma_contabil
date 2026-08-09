@@ -1,5 +1,5 @@
 import logging
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from app.models.domain import TipoArquivo
 from app.contexts.staging_ingestion.parsers.base import ImportAdapter
 
@@ -14,7 +14,16 @@ class ParserFactory:
             cls._adapters.append(adapter)
             
     @classmethod
-    def get_parser(cls, file_path: str, tipo_arquivo: TipoArquivo) -> Optional[ImportAdapter]:
+    def get_parser(cls, file_path: str, tipo_arquivo: TipoArquivo, import_config: Optional[Dict[str, Any]] = None) -> Optional[ImportAdapter]:
+        # 1. Tentar usar o ConfigurableSpreadsheetParser se houver config específica para o cliente
+        if import_config and tipo_arquivo.name in import_config:
+            logger.info(f"Usando parser configurável para {tipo_arquivo.name}")
+            from app.contexts.staging_ingestion.parsers.configurable_spreadsheet import ConfigurableSpreadsheetParser
+            parser = ConfigurableSpreadsheetParser(import_config=import_config, tipo_arquivo=tipo_arquivo)
+            if parser.can_parse(file_path, tipo_arquivo):
+                return parser
+
+        # 2. Fallback para os parsers heurísticos registrados
         for adapter in cls._adapters:
             try:
                 if adapter.can_parse(file_path, tipo_arquivo):

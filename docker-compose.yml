@@ -35,6 +35,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    volumes:
+      - uploads_data:/app/uploads
 
   worker:
     build: ./backend
@@ -48,6 +50,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    volumes:
+      - uploads_data:/app/uploads
 
   frontend:
     build: 
@@ -61,3 +65,4 @@ services:
 
 volumes:
   postgres_data:
+  uploads_data:

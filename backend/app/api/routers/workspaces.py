@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from pydantic import BaseModel, UUID4
 
 from app.api.deps import get_db
@@ -14,6 +14,7 @@ class EmpresaResponse(BaseModel):
     cnpj: str
     razao_social: str
     nome_fantasia: str
+    import_config: Optional[Dict[str, Any]] = None
     
     class Config:
         from_attributes = True
@@ -42,6 +43,28 @@ def listar_empresas_do_usuario(
         empresas = db.query(Empresa).filter(Empresa.id == current_user.empresa_id).all()
         
     return empresas
+
+@router.put("/empresas/{empresa_id}/import-config")
+def atualizar_import_config(
+    empresa_id: UUID4,
+    import_config: Dict[str, Any],
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
+):
+    """
+    Atualiza as configurações de importação (De-Para) do Workspace.
+    """
+    if current_user.role != "ADMIN" and current_user.empresa_id != empresa_id:
+        raise HTTPException(status_code=403, detail="Acesso negado a este workspace.")
+        
+    empresa = db.query(Empresa).filter(Empresa.id == empresa_id).first()
+    if not empresa:
+        raise HTTPException(status_code=404, detail="Workspace não encontrado.")
+        
+    empresa.import_config = import_config
+    db.commit()
+    
+    return {"status": "Configurações de importação atualizadas."}
 
 @router.get("/{empresa_id}/mappings", response_model=List[MappingResponse])
 def listar_mapeamentos(
