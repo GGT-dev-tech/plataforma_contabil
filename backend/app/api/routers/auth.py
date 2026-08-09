@@ -12,6 +12,10 @@ router = APIRouter(
     tags=["auth"]
 )
 
+@router.get("/login")
+def login_get_info():
+    return {"message": "Endpoint de autenticação. Utilize POST com username e password."}
+
 @router.post("/login")
 def login_for_access_token(db: Session = Depends(get_db), form_data: OAuth2PasswordRequestForm = Depends()):
     usuario = db.query(Usuario).filter(Usuario.email == form_data.username).first()
