@@ -1,16 +1,17 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List, Dict, Any, Optional
-from pydantic import BaseModel, UUID4
+from pydantic import BaseModel
+import uuid
 
 from app.api.deps import get_db
 from app.contexts.identity.auth_utils import get_current_user
-from app.models.domain import Empresa, Usuario, ClientSchemaMapping
+from app.models.domain import Empresa, Usuario, ClientSchemaMapping, Role
 
 router = APIRouter(prefix="/workspaces", tags=["Workspaces"])
 
 class EmpresaResponse(BaseModel):
-    id: UUID4
+    id: str
     cnpj: str
     razao_social: str
     nome_fantasia: str
@@ -41,13 +42,21 @@ def listar_empresas_do_usuario(
     Retorna a lista de empresas (workspaces) a que o usuário tem acesso.
     Para ADMINs, pode retornar todas. Para Analistas, retorna a empresa vinculada.
     """
-    if current_user.role == "ADMIN" and not current_user.empresa_id:
+    if current_user.role == Role.ADMIN and not current_user.empresa_id:
         empresas = db.query(Empresa).all()
     else:
-        # Se for um usuário vinculado a uma empresa
         empresas = db.query(Empresa).filter(Empresa.id == current_user.empresa_id).all()
-        
-    return empresas
+    
+    # Serialize UUIDs to string for JSON response
+    return [
+        EmpresaResponse(
+            id=str(e.id),
+            cnpj=e.cnpj or '',
+            razao_social=e.razao_social or '',
+            nome_fantasia=e.nome_fantasia or '',
+            import_config=e.import_config
+        ) for e in empresas
+    ]
 
 @router.post("/empresas", response_model=EmpresaResponse, status_code=201)
 def criar_empresa(
