@@ -14,15 +14,25 @@ export const Login: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   const getLoginUrl = () => {
-    let envUrl = (import.meta.env.VITE_API_URL || '').trim();
+    // 1. Runtime config injected by docker-entrypoint.sh (most reliable in Railway)
+    const runtimeUrl = (window as any).__API_URL__;
+    // 2. Build-time VITE env var
+    const buildTimeUrl = import.meta.env.VITE_API_URL;
+    
+    let envUrl = ((runtimeUrl || buildTimeUrl || '') as string).trim();
+    
     if (!envUrl) {
       return '/api/v1/auth/login';
     }
+    
     envUrl = envUrl.replace(/\/+$/, '');
+    // Strip /auth or /auth/login suffix if user accidentally included it
     envUrl = envUrl.replace(/\/auth\/login$/, '').replace(/\/auth$/, '');
+    
     if (!envUrl.endsWith('/api/v1')) {
       envUrl = `${envUrl}/api/v1`;
     }
+    
     return `${envUrl}/auth/login`;
   };
 
