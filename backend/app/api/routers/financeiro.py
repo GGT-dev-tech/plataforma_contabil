@@ -7,7 +7,8 @@ from pydantic import BaseModel
 from app.api.deps import get_db
 from app.contexts.identity.auth_utils import get_current_user
 from app.models.domain import Usuario, Role
-from app.models.financeiro import TituloFinanceiro, TipoTitulo, StatusTitulo
+from app.models.financeiro import TituloFinanceiro, TipoTitulo, StatusTitulo, MovimentacaoFinanceira, ConciliacaoFinanceira
+from app.services.reconciliacao import ReconciliacaoService
 
 router = APIRouter(prefix="/financeiro", tags=["financeiro"])
 
@@ -125,3 +126,63 @@ def update_titulo_status(
     db.commit()
     db.refresh(titulo)
     return _titulo_to_dict(titulo)
+
+@router.post("/conciliar", response_model=dict)
+def conciliar_titulos(
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
+):
+    """
+    Roda o Motor Algorítmico de Reconciliação (Fase 1, 2 e 3)
+    para encontrar pares (Extrato <-> Fatura).
+    """
+    if not current_user.empresa_id:
+        raise HTTPException(status_code=403, detail="Usuário sem empresa vinculada")
+        
+    service = ReconciliacaoService(db)
+    resultados = service.rodar_motor_conciliacao(str(current_user.empresa_id))
+    return resultados
+
+@router.get("/dre-gerencial", response_model=dict)
+def dre_gerencial(
+    mes: int = Query(None),
+    ano: int = Query(None),
+    db: Session = Depends(get_db),
+    current_user: Usuario = Depends(get_current_user)
+):
+    """
+    Retorna o relatório de DRE Gerencial (Baseado em Regime de Caixa).
+    Soma todos os títulos liquidados no período fornecido.
+    """
+    if not current_user.empresa_id:
+        raise HTTPException(status_code=403)
+        
+    query = db.query(TituloFinanceiro).filter(
+        TituloFinanceiro.empresa_id == current_user.empresa_id,
+        TituloFinanceiro.status == StatusTitulo.LIQUIDADO
+    )
+    
+    if mes and ano:
+        # Simplificação para SQLite/Postgres. Usando extract seria melhor, mas para MVP filtramos string ISO.
+        data_inicio = date(ano, mes, 1)
+        if mes == 12:
+            data_fim = date(ano+1, 1, 1)
+        else:
+            data_fim = date(ano, mes+1, 1)
+            
+        query = query.filter(TituloFinanceiro.data_pagamento >= data_inicio)
+        query = query.filter(TituloFinanceiro.data_pagamento < data_fim)
+        
+    titulos = query.all()
+    
+    receitas = sum(t.valor_pago for t in titulos if t.tipo == TipoTitulo.RECEBER)
+    despesas = sum(t.valor_pago for t in titulos if t.tipo == TipoTitulo.PAGAR)
+    
+    return {
+        "regime": "CAIXA",
+        "periodo": f"{mes:02d}/{ano}" if mes else "Geral",
+        "receitas_operacionais": float(receitas),
+        "despesas_operacionais": float(despesas),
+        "resultado_liquido_caixa": float(receitas - despesas),
+        "total_movimentos": len(titulos)
+    }
