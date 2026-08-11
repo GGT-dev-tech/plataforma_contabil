@@ -62,6 +62,7 @@ from .obrigacoes import (
     StatusObrigacao,
     TipoObrigacao,
 )
+from .fiscal import ApuracaoFiscal, DetalheImposto, TipoImposto
 
 __all__ = [
     # Base
@@ -84,4 +85,5 @@ __all__ = [
     "LancamentoCabecalho", "PartidaItem", "PeriodoContabil", 
     "TemplateLancamento", "TipoPartida", "StatusLancamento", "StatusPeriodo", "ModuloOrigem",
     "ObrigacaoAcessoriaJob", "MapeamentoContaReferencial", "StatusObrigacao", "TipoObrigacao",
+    "ApuracaoFiscal", "DetalheImposto", "TipoImposto",
 ]
