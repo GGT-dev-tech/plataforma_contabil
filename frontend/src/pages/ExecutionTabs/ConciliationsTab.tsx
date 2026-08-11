@@ -30,14 +30,14 @@ export const ConciliationsTab: React.FC<{ executionId: string }> = ({ executionI
   const columns = [
     { 
       header: 'ID', 
-      accessor: (c: any) => c.conciliacao_id.substring(0, 8) 
+      accessor: (c: any) => <span className="font-mono text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded border border-slate-200">{c.conciliacao_id.substring(0, 8)}</span> 
     },
     { 
       header: 'Movimentação Bancária', 
       accessor: (c: any) => (
         <div>
-          <p className="font-medium">{c.movimentacao.historico}</p>
-          <p className="text-sm text-gray-500">R$ {parseFloat(c.movimentacao.valor).toFixed(2)}</p>
+          <p className="font-medium text-slate-800">{c.movimentacao.historico}</p>
+          <p className="text-sm font-semibold text-slate-600">R$ {parseFloat(c.movimentacao.valor).toFixed(2)}</p>
         </div>
       ) 
     },
@@ -45,19 +45,19 @@ export const ConciliationsTab: React.FC<{ executionId: string }> = ({ executionI
       header: 'Parcela ERP', 
       accessor: (c: any) => (
         <div>
-          <p className="font-medium">{c.parcela?.fornecedor || 'N/A'}</p>
-          <p className="text-sm text-gray-500">R$ {c.parcela?.valor ? parseFloat(c.parcela.valor).toFixed(2) : '0.00'}</p>
+          <p className="font-medium text-slate-800">{c.parcela?.fornecedor || 'N/A'}</p>
+          <p className="text-sm font-semibold text-slate-600">R$ {c.parcela?.valor ? parseFloat(c.parcela.valor).toFixed(2) : '0.00'}</p>
         </div>
       ) 
     },
     { 
       header: 'Score', 
-      accessor: (c: any) => c.score.toFixed(2) 
+      accessor: (c: any) => <span className="font-bold text-slate-700">{c.score.toFixed(2)}</span> 
     },
     { 
       header: 'Aprovado Por', 
       accessor: (c: any) => (
-        <span className="text-sm font-medium text-gray-600 bg-gray-100 dark:bg-gray-800 dark:text-gray-300 px-2 py-1 rounded-md">
+        <span className="text-xs font-semibold text-slate-700 bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-md">
           {c.aprovado_por || 'SYSTEM'}
         </span>
       )
@@ -69,7 +69,7 @@ export const ConciliationsTab: React.FC<{ executionId: string }> = ({ executionI
   ];
 
   return (
-    <div className="bg-white/30 dark:bg-gray-900/30 rounded-xl overflow-hidden">
+    <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
       <DataTable 
         data={conciliations} 
         columns={columns} 

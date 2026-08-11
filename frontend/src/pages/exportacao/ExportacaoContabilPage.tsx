@@ -39,11 +39,9 @@ export const ExportacaoContabilPage: React.FC = () => {
         throw new Error(errorData.detail || 'Erro ao gerar exportação');
       }
       
-      // Criar URL para o Blob
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       
-      // Extrair o nome do arquivo do header (se existir)
       const disposition = response.headers.get('Content-Disposition');
       let filename = `exportacao_${formato}.txt`;
       if (disposition && disposition.indexOf('filename=') !== -1) {
@@ -53,7 +51,6 @@ export const ExportacaoContabilPage: React.FC = () => {
         }
       }
       
-      // Trigger Download
       const a = document.createElement('a');
       a.href = url;
       a.download = filename;
@@ -70,35 +67,36 @@ export const ExportacaoContabilPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+    <div className="space-y-6 max-w-6xl mx-auto">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-4 border-b border-slate-200">
         <div>
-          <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">
-            Exportação Contábil
+          <h1 className="text-3xl font-bold text-slate-800 flex items-center gap-3">
+            <Download className="w-8 h-8 text-primary-600" />
+            Exportação Contábil & SPED
           </h1>
-          <p className="text-gray-400 mt-1">
-            Geração de arquivos magnéticos (SPED) e integração com Sistemas Contábeis.
+          <p className="text-slate-500 mt-1">
+            Geração de arquivos magnéticos (SPED ECD) e integração com sistemas (Domínio, Questor, Fortes).
           </p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="md:col-span-2 glass-panel rounded-2xl border border-white/5 p-6">
+        <div className="md:col-span-2 bg-white rounded-xl border border-slate-200 shadow-sm p-6">
           <form onSubmit={handleExport} className="space-y-6">
-            <h3 className="text-xl font-semibold text-gray-200 border-b border-white/5 pb-4">
+            <h3 className="text-lg font-bold text-slate-800 border-b border-slate-100 pb-4">
               Parâmetros da Exportação
             </h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-300 flex items-center gap-2">
-                  <FileText className="w-4 h-4 text-primary-400" />
+                <label className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-primary-600" />
                   Formato de Saída
                 </label>
                 <select 
                   value={formato}
                   onChange={(e) => setFormato(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all appearance-none"
+                  className="w-full bg-white border border-slate-300 rounded-lg px-4 py-2.5 text-slate-800 focus:ring-2 focus:ring-primary-500 outline-none text-sm font-medium"
                   required
                 >
                   <option value="dominio_sistemas">Domínio Sistemas (Lançamentos TXT)</option>
@@ -107,53 +105,53 @@ export const ExportacaoContabilPage: React.FC = () => {
               </div>
               
               <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-300 flex items-center gap-2">
-                  <Settings className="w-4 h-4 text-accent-400" />
-                  Workspace / Construtora
+                <label className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                  <Settings className="w-4 h-4 text-slate-500" />
+                  Workspace Selecionado
                 </label>
                 <input 
                   type="text"
                   readOnly
                   value={activeWorkspace?.razao_social || 'Nenhuma selecionada'}
-                  className="w-full bg-black/20 border border-white/5 rounded-xl px-4 py-3 text-gray-400 cursor-not-allowed outline-none"
+                  className="w-full bg-slate-100 border border-slate-200 rounded-lg px-4 py-2.5 text-slate-600 cursor-not-allowed text-sm font-medium"
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-300">Data Inicial</label>
+                <label className="text-sm font-semibold text-slate-700">Data Inicial</label>
                 <input 
                   type="date"
                   value={dataInicio}
                   onChange={(e) => setDataInicio(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
+                  className="w-full bg-white border border-slate-300 rounded-lg px-4 py-2.5 text-slate-800 focus:ring-2 focus:ring-primary-500 outline-none text-sm"
                   required
                 />
               </div>
               
               <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-300">Data Final</label>
+                <label className="text-sm font-semibold text-slate-700">Data Final</label>
                 <input 
                   type="date"
                   value={dataFim}
                   onChange={(e) => setDataFim(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all"
+                  className="w-full bg-white border border-slate-300 rounded-lg px-4 py-2.5 text-slate-800 focus:ring-2 focus:ring-primary-500 outline-none text-sm"
                   required
                 />
               </div>
             </div>
 
-            <div className="pt-4 border-t border-white/5 flex justify-end">
+            <div className="pt-4 border-t border-slate-100 flex justify-end">
               <button 
                 type="submit"
                 disabled={loading || !activeWorkspace}
-                className="px-6 py-3 bg-primary-600 hover:bg-primary-500 text-white rounded-xl font-medium transition-all shadow-[0_0_20px_rgba(37,99,235,0.2)] hover:shadow-[0_0_25px_rgba(37,99,235,0.3)] flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-6 py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-semibold text-sm shadow-sm transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? (
-                  <div className="animate-spin w-5 h-5 border-2 border-white/20 border-t-white rounded-full"></div>
+                  <div className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></div>
                 ) : (
-                  <Download className="w-5 h-5" />
+                  <Download className="w-4 h-4" />
                 )}
                 Gerar Arquivo
               </button>
@@ -162,16 +160,16 @@ export const ExportacaoContabilPage: React.FC = () => {
         </div>
         
         <div className="space-y-4">
-          <div className="glass-panel rounded-2xl border border-white/5 p-6 bg-gradient-to-br from-blue-500/5 to-purple-500/5">
-            <h3 className="text-lg font-semibold text-gray-200 mb-2 flex items-center gap-2">
-              <AlertCircle className="w-5 h-5 text-blue-400" />
+          <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
+            <h3 className="text-base font-bold text-slate-800 mb-3 flex items-center gap-2">
+              <AlertCircle className="w-5 h-5 text-primary-600" />
               Instruções de Importação
             </h3>
             
             {formato === 'dominio_sistemas' ? (
-              <div className="text-sm text-gray-400 space-y-3">
+              <div className="text-sm text-slate-600 space-y-3">
                 <p>Para importar este arquivo na Domínio Sistemas:</p>
-                <ol className="list-decimal pl-4 space-y-2">
+                <ol className="list-decimal pl-4 space-y-2 text-slate-700">
                   <li>Acesse o menu <strong>Utilitários &gt; Importação &gt; Padrão</strong></li>
                   <li>Selecione o arquivo TXT baixado</li>
                   <li>Marque a opção "Lançamentos Contábeis com múltiplas partidas"</li>
@@ -179,13 +177,13 @@ export const ExportacaoContabilPage: React.FC = () => {
                 </ol>
               </div>
             ) : (
-              <div className="text-sm text-gray-400 space-y-3">
+              <div className="text-sm text-slate-600 space-y-3">
                 <p>Para validar e transmitir o SPED ECD:</p>
-                <ol className="list-decimal pl-4 space-y-2">
+                <ol className="list-decimal pl-4 space-y-2 text-slate-700">
                   <li>Abra o <strong>PVA (Programa Validador e Assinador)</strong> do SPED Contábil</li>
                   <li>Vá em <strong>Escrituração &gt; Importar</strong></li>
                   <li>Selecione o arquivo baixado (.txt)</li>
-                  <li>O PVA validará os blocos O (Abertura) e I (Lançamentos Diários). Complete os saldos se necessário antes de assinar.</li>
+                  <li>O PVA validará os blocos O (Abertura) e I (Lançamentos Diários).</li>
                 </ol>
               </div>
             )}

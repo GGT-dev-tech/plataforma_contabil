@@ -1,218 +1,286 @@
-import React, { useEffect, useState } from 'react';
-import { Landmark, AlertCircle, CheckCircle2, XCircle, Clock } from 'lucide-react';
+import React, { useEffect, useState, useCallback } from 'react';
+import { Landmark, Download, Calendar, RefreshCw, AlertCircle, TrendingUp, TrendingDown, DollarSign } from 'lucide-react';
 import { useWorkspace } from '../../contexts/WorkspaceContext';
+import { apiClient as api } from '../../services/api';
 
-interface Titulo {
-  id: string;
-  tipo: 'PAGAR' | 'RECEBER';
-  status: 'ABERTO' | 'PAGO' | 'ATRASADO' | 'CANCELADO';
-  descricao: string;
-  fornecedor_cliente_nome: string;
-  valor_nominal: number;
-  data_vencimento: string;
-  gerado_automaticamente: boolean;
+interface DreData {
+  RECEITA_BRUTA?: number;
+  DEDUCOES?: number;
+  RECEITA_LIQUIDA?: number;
+  CUSTOS?: number;
+  LUCRO_BRUTO?: number;
+  DESPESAS_OPERACIONAIS?: number;
+  EBITDA?: number;
+  RESULTADO_FINANCEIRO?: number;
+  LUCRO_LIQUIDO?: number;
+  [key: string]: any;
 }
 
 export const ReceitasDespesasPage: React.FC = () => {
   const { activeWorkspace } = useWorkspace();
-  const [titulos, setTitulos] = useState<Titulo[]>([]);
   const [loading, setLoading] = useState(false);
-  const [filterTipo, setFilterTipo] = useState<'ALL' | 'PAGAR' | 'RECEBER'>('ALL');
+  const [downloading, setDownloading] = useState(false);
+  const [dreData, setDreData] = useState<DreData | null>(null);
+  
+  const currentYear = new Date().getFullYear();
+  const [selectedYear, setSelectedYear] = useState<number>(currentYear);
+  const [selectedMonth, setSelectedMonth] = useState<number | ''>(''); // '' means full year
 
-  const fetchTitulos = async () => {
+  const fetchDre = useCallback(async () => {
     if (!activeWorkspace) return;
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`/api/v1/financeiro/titulos?empresa_id=${activeWorkspace.id}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (!response.ok) throw new Error('Erro ao buscar títulos');
-      const data = await response.json();
-      setTitulos(data);
+      let url = `/workspaces/${activeWorkspace.id}/reports/dre?ano=${selectedYear}`;
+      if (selectedMonth !== '') {
+        url += `&mes=${selectedMonth}`;
+      }
+      const response = await api.get(url);
+      const data = response.data;
+      if (data.dre) {
+        setDreData(data.dre);
+      } else if (data.acumulado) {
+        setDreData(data.acumulado);
+      } else {
+        setDreData(data);
+      }
     } catch (error) {
-      console.error(error);
+      console.error('Erro ao buscar DRE:', error);
+      setDreData(null);
     } finally {
       setLoading(false);
     }
-  };
+  }, [activeWorkspace, selectedYear, selectedMonth]);
 
   useEffect(() => {
-    fetchTitulos();
-  }, [activeWorkspace]);
+    fetchDre();
+  }, [fetchDre]);
 
-  const handlePagar = async (id: string) => {
+  const handleExportExcel = async () => {
+    if (!activeWorkspace) return;
+    setDownloading(true);
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`/api/v1/financeiro/titulos/${id}/status`, {
-        method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          status: 'PAGO',
-          data_pagamento: new Date().toISOString().split('T')[0]
-        })
-      });
-      if (!response.ok) throw new Error('Erro ao pagar título');
-      fetchTitulos();
+      let url = `/workspaces/${activeWorkspace.id}/reports/dre/download?ano=${selectedYear}`;
+      if (selectedMonth !== '') {
+        url += `&mes=${selectedMonth}`;
+      }
+      const response = await api.get(url, { responseType: 'blob' });
+      const blob = new Blob([response.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      const monthStr = selectedMonth ? `_${String(selectedMonth).padStart(2, '0')}` : '_anual';
+      link.download = `DRE_${activeWorkspace.nome_fantasia || 'Empresa'}_${selectedYear}${monthStr}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
     } catch (error) {
-      console.error(error);
-      alert('Erro ao processar pagamento');
+      console.error('Erro ao baixar Excel:', error);
+      alert('Erro ao exportar DRE em Excel.');
+    } finally {
+      setDownloading(false);
     }
   };
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+  const formatCurrency = (val: number | undefined) => {
+    if (val === undefined || val === null) return 'R$ 0,00';
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
   };
 
-  const formatDate = (dateString: string) => {
-    const d = new Date(dateString);
-    // adjust for timezone issues, simple split is safer for YYYY-MM-DD
-    const parts = dateString.split('-');
-    if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
-    return d.toLocaleDateString('pt-BR');
+  const getDivergenceColor = (val: number | undefined) => {
+    if (!val) return 'text-slate-800';
+    return val >= 0 ? 'text-emerald-600' : 'text-red-600';
   };
 
-  const isVencido = (dataStr: string, status: string) => {
-    if (status === 'PAGO' || status === 'CANCELADO') return false;
-    const today = new Date().toISOString().split('T')[0];
-    return dataStr < today;
-  };
-
-  const filteredTitulos = titulos.filter(t => filterTipo === 'ALL' || t.tipo === filterTipo);
-
-  const renderCol = (title: string, status: string, icon: React.ReactNode, colorClass: string) => {
-    const cols = filteredTitulos.filter(t => t.status === status);
-    return (
-      <div className="flex flex-col flex-1 min-w-[300px]">
-        <div className={`flex items-center justify-between p-4 mb-4 rounded-xl border border-white/10 ${colorClass}`}>
-          <div className="flex items-center gap-2 font-semibold">
-            {icon}
-            {title}
-          </div>
-          <div className="px-2 py-0.5 bg-black/20 rounded-full text-xs font-bold">
-            {cols.length}
-          </div>
-        </div>
-
-        <div className="flex-1 overflow-y-auto space-y-3 custom-scrollbar pr-2 pb-4">
-          {cols.length === 0 ? (
-            <div className="text-center p-6 border border-dashed border-white/10 rounded-xl text-gray-500 text-sm">
-              Nenhum título
-            </div>
-          ) : (
-            cols.map(t => (
-              <div key={t.id} className={`p-4 rounded-xl border shadow-lg transition-all ${
-                t.tipo === 'PAGAR' ? 'bg-red-500/5 border-red-500/20' : 'bg-emerald-500/5 border-emerald-500/20'
-              }`}>
-                <div className="flex justify-between items-start mb-2">
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-widest ${
-                    t.tipo === 'PAGAR' ? 'bg-red-500/20 text-red-400' : 'bg-emerald-500/20 text-emerald-400'
-                  }`}>
-                    {t.tipo}
-                  </span>
-                  {t.gerado_automaticamente && (
-                    <span className="text-[10px] text-primary-400 bg-primary-500/10 px-2 py-0.5 rounded-full" title="Gerado via Retenção (Documento Fiscal)">
-                      Automático
-                    </span>
-                  )}
-                </div>
-                
-                <h4 className="font-semibold text-gray-200 line-clamp-2 leading-tight" title={t.descricao}>
-                  {t.descricao}
-                </h4>
-                <p className="text-xs text-gray-500 mt-1 truncate">{t.fornecedor_cliente_nome || 'S/N'}</p>
-                
-                <div className="mt-4 flex items-end justify-between">
-                  <div>
-                    <p className="text-[10px] text-gray-500 uppercase tracking-widest mb-1">Valor</p>
-                    <p className={`font-bold ${t.tipo === 'PAGAR' ? 'text-red-400' : 'text-emerald-400'}`}>
-                      {formatCurrency(t.valor_nominal)}
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-[10px] text-gray-500 uppercase tracking-widest mb-1">Vencimento</p>
-                    <p className={`text-sm font-medium ${isVencido(t.data_vencimento, t.status) ? 'text-red-500' : 'text-gray-300'}`}>
-                      {formatDate(t.data_vencimento)}
-                    </p>
-                  </div>
-                </div>
-
-                {t.status === 'ABERTO' && (
-                  <div className="mt-4 pt-3 border-t border-white/5 flex gap-2">
-                    <button 
-                      onClick={() => handlePagar(t.id)}
-                      className={`flex-1 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                        t.tipo === 'PAGAR' 
-                          ? 'bg-red-500/20 text-red-300 hover:bg-red-500/30' 
-                          : 'bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30'
-                      }`}
-                    >
-                      {t.tipo === 'PAGAR' ? 'Marcar como Pago' : 'Marcar como Recebido'}
-                    </button>
-                  </div>
-                )}
-              </div>
-            ))
-          )}
-        </div>
-      </div>
-    );
-  };
+  const months = [
+    { value: 1, label: 'Janeiro' },
+    { value: 2, label: 'Fevereiro' },
+    { value: 3, label: 'Março' },
+    { value: 4, label: 'Abril' },
+    { value: 5, label: 'Maio' },
+    { value: 6, label: 'Junho' },
+    { value: 7, label: 'Julho' },
+    { value: 8, label: 'Agosto' },
+    { value: 9, label: 'Setembro' },
+    { value: 10, label: 'Outubro' },
+    { value: 11, label: 'Novembro' },
+    { value: 12, label: 'Dezembro' },
+  ];
 
   return (
-    <div className="space-y-6 h-[calc(100vh-140px)] flex flex-col">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 flex-shrink-0">
+    <div className="space-y-6 max-w-6xl mx-auto">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-4 border-b border-slate-200">
         <div>
-          <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400 flex items-center gap-3">
-            <Landmark className="w-8 h-8 text-primary-400" />
-            Receitas & Despesas
+          <h1 className="text-3xl font-bold text-slate-800 flex items-center gap-3">
+            <Landmark className="w-8 h-8 text-primary-600" />
+            DRE Gerencial & Financeiro
           </h1>
-          <p className="text-gray-400 mt-1">
-            Gestão Financeira integrada ao contas a pagar e receber da construtora.
+          <p className="text-slate-500 mt-1">
+            Demonstração do Resultado do Exercício consolidada pelo motor contábil da empresa.
           </p>
         </div>
-        
-        <div className="flex items-center gap-2 bg-white/5 p-1 rounded-xl border border-white/10">
-          {(['ALL', 'PAGAR', 'RECEBER'] as const).map(f => (
-            <button
-              key={f}
-              onClick={() => setFilterTipo(f)}
-              className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                filterTipo === f 
-                  ? 'bg-primary-500 text-white shadow-lg' 
-                  : 'text-gray-400 hover:text-white hover:bg-white/5'
-              }`}
-            >
-              {f === 'ALL' ? 'Todos' : f === 'PAGAR' ? 'A Pagar' : 'A Receber'}
-            </button>
-          ))}
+
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleExportExcel}
+            disabled={downloading || !activeWorkspace}
+            className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-sm px-4 py-2.5 rounded-lg shadow-sm flex items-center gap-2 transition-colors disabled:opacity-50"
+          >
+            {downloading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+            Exportar Excel
+          </button>
         </div>
       </div>
 
       {!activeWorkspace ? (
-        <div className="flex-1 flex items-center justify-center border border-white/10 rounded-2xl bg-white/5">
-          <div className="text-center max-w-sm">
-            <AlertCircle className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
-            <h3 className="text-xl font-bold text-white mb-2">Selecione uma Empresa</h3>
-            <p className="text-gray-400">Você precisa selecionar um workspace ativo no menu de configurações para visualizar o financeiro.</p>
-          </div>
-        </div>
-      ) : loading && titulos.length === 0 ? (
-        <div className="flex-1 flex items-center justify-center">
-          <div className="animate-spin w-8 h-8 border-2 border-primary-500 border-t-transparent rounded-full"></div>
+        <div className="p-12 text-center border border-slate-200 rounded-xl bg-white shadow-sm">
+          <AlertCircle className="w-12 h-12 text-amber-500 mx-auto mb-4" />
+          <h3 className="text-lg font-bold text-slate-800 mb-2">Nenhum Workspace Selecionado</h3>
+          <p className="text-slate-500">Selecione uma empresa no topo para visualizar a DRE Gerencial.</p>
         </div>
       ) : (
-        <div className="flex-1 overflow-x-auto overflow-y-hidden">
-          <div className="flex gap-6 h-full min-w-max pb-4">
-            {renderCol('Em Aberto', 'ABERTO', <Clock className="w-5 h-5" />, 'bg-blue-500/10 text-blue-400')}
-            {renderCol('Pagos / Recebidos', 'PAGO', <CheckCircle2 className="w-5 h-5" />, 'bg-emerald-500/10 text-emerald-400')}
-            {renderCol('Atrasados', 'ATRASADO', <AlertCircle className="w-5 h-5" />, 'bg-orange-500/10 text-orange-400')}
-            {renderCol('Cancelados', 'CANCELADO', <XCircle className="w-5 h-5" />, 'bg-gray-500/10 text-gray-400')}
+        <>
+          {/* Controls / Filter Bar */}
+          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <Calendar className="w-5 h-5 text-slate-400" />
+              <span className="text-sm font-semibold text-slate-700">Período de Análise:</span>
+              
+              <select
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(Number(e.target.value))}
+                className="bg-slate-50 border border-slate-300 text-slate-800 rounded-lg text-sm px-3 py-1.5 font-medium outline-none focus:ring-2 focus:ring-primary-500"
+              >
+                {[currentYear - 2, currentYear - 1, currentYear, currentYear + 1].map((y) => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
+
+              <select
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(e.target.value === '' ? '' : Number(e.target.value))}
+                className="bg-slate-50 border border-slate-300 text-slate-800 rounded-lg text-sm px-3 py-1.5 font-medium outline-none focus:ring-2 focus:ring-primary-500"
+              >
+                <option value="">Acumulado Anual</option>
+                {months.map((m) => (
+                  <option key={m.value} value={m.value}>{m.label}</option>
+                ))}
+              </select>
+            </div>
+
+            <button
+              onClick={fetchDre}
+              disabled={loading}
+              className="text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-1.5"
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              Atualizar
+            </button>
           </div>
-        </div>
+
+          {/* Key Metric Highlights */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
+              <div className="w-12 h-12 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                <TrendingUp className="w-6 h-6" />
+              </div>
+              <div>
+                <p className="text-xs uppercase font-bold tracking-wider text-slate-400">Receita Bruta</p>
+                <h3 className="text-2xl font-bold text-slate-800">{formatCurrency(dreData?.RECEITA_BRUTA)}</h3>
+              </div>
+            </div>
+
+            <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
+              <div className="w-12 h-12 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                <DollarSign className="w-6 h-6" />
+              </div>
+              <div>
+                <p className="text-xs uppercase font-bold tracking-wider text-slate-400">EBITDA / Operacional</p>
+                <h3 className={`text-2xl font-bold ${getDivergenceColor(dreData?.EBITDA)}`}>{formatCurrency(dreData?.EBITDA)}</h3>
+              </div>
+            </div>
+
+            <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
+              <div className="w-12 h-12 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+                <TrendingDown className="w-6 h-6" />
+              </div>
+              <div>
+                <p className="text-xs uppercase font-bold tracking-wider text-slate-400">Resultado Líquido</p>
+                <h3 className={`text-2xl font-bold ${getDivergenceColor(dreData?.LUCRO_LIQUIDO)}`}>{formatCurrency(dreData?.LUCRO_LIQUIDO)}</h3>
+              </div>
+            </div>
+          </div>
+
+          {/* Detailed Statement Table */}
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+              <h2 className="text-lg font-bold text-slate-800">Demonstrativo Estruturado</h2>
+              <span className="text-xs font-semibold px-2.5 py-1 bg-slate-100 text-slate-600 rounded-full border border-slate-200">
+                {selectedMonth ? `${months.find(m => m.value === selectedMonth)?.label} / ${selectedYear}` : `Exercício ${selectedYear}`}
+              </span>
+            </div>
+
+            {loading ? (
+              <div className="p-12 text-center text-slate-500 flex flex-col items-center justify-center">
+                <RefreshCw className="w-8 h-8 animate-spin text-primary-600 mb-3" />
+                Carregando dados financeiros da DRE...
+              </div>
+            ) : !dreData ? (
+              <div className="p-12 text-center text-slate-500">
+                Nenhum lançamento contábil processado para o período selecionado.
+              </div>
+            ) : (
+              <div className="divide-y divide-slate-100 text-sm">
+                <div className="px-6 py-3.5 flex justify-between items-center bg-slate-50/50 font-bold text-slate-800">
+                  <span>(+) RECEITA OPERACIONAL BRUTA</span>
+                  <span className="font-mono text-emerald-600">{formatCurrency(dreData.RECEITA_BRUTA)}</span>
+                </div>
+
+                <div className="px-6 py-3 flex justify-between items-center text-slate-600 pl-10">
+                  <span>(-) Deduções da Receita & Impostos Sobre Vendas</span>
+                  <span className="font-mono text-red-500">{formatCurrency(dreData.DEDUCOES)}</span>
+                </div>
+
+                <div className="px-6 py-3.5 flex justify-between items-center bg-slate-100/60 font-bold text-slate-900 border-t border-b border-slate-200">
+                  <span>(=) RECEITA OPERACIONAL LÍQUIDA</span>
+                  <span className="font-mono">{formatCurrency(dreData.RECEITA_LIQUIDA)}</span>
+                </div>
+
+                <div className="px-6 py-3 flex justify-between items-center text-slate-600 pl-10">
+                  <span>(-) Custo dos Serviços Prestados & Obras (CPV/CSV)</span>
+                  <span className="font-mono text-red-500">{formatCurrency(dreData.CUSTOS)}</span>
+                </div>
+
+                <div className="px-6 py-3.5 flex justify-between items-center bg-emerald-50/50 font-bold text-slate-900 border-t border-b border-emerald-100">
+                  <span>(=) LUCRO BRUTO</span>
+                  <span className="font-mono text-emerald-700">{formatCurrency(dreData.LUCRO_BRUTO)}</span>
+                </div>
+
+                <div className="px-6 py-3 flex justify-between items-center text-slate-600 pl-10">
+                  <span>(-) Despesas Operacionais (Administrativas, Vendas, Gerais)</span>
+                  <span className="font-mono text-red-500">{formatCurrency(dreData.DESPESAS_OPERACIONAIS)}</span>
+                </div>
+
+                <div className="px-6 py-3.5 flex justify-between items-center bg-indigo-50/50 font-bold text-slate-900 border-t border-b border-indigo-100">
+                  <span>(=) EBITDA (RESULTADO OPERACIONAL)</span>
+                  <span className="font-mono text-indigo-700">{formatCurrency(dreData.EBITDA)}</span>
+                </div>
+
+                <div className="px-6 py-3 flex justify-between items-center text-slate-600 pl-10">
+                  <span>(+/-) Resultado Financeiro Líquido</span>
+                  <span className="font-mono">{formatCurrency(dreData.RESULTADO_FINANCEIRO)}</span>
+                </div>
+
+                <div className="px-6 py-4 flex justify-between items-center bg-slate-900 text-white font-bold text-base rounded-b-xl">
+                  <span>(=) RESULTADO LÍQUIDO DO EXERCÍCIO</span>
+                  <span className={`font-mono text-lg ${dreData.LUCRO_LIQUIDO && dreData.LUCRO_LIQUIDO >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                    {formatCurrency(dreData.LUCRO_LIQUIDO)}
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+        </>
       )}
     </div>
   );

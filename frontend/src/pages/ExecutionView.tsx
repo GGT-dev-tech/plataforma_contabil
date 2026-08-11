@@ -18,10 +18,10 @@ export const ExecutionView: React.FC = () => {
   const { data: execution, isLoading, error } = useExecution(id!);
 
   if (isLoading) return <Loading text="Carregando execução..." fullScreen />;
-  if (error || !execution) return <div className="text-red-500 p-4">Erro ao carregar a execução.</div>;
+  if (error || !execution) return <div className="text-red-600 p-4">Erro ao carregar a execução.</div>;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-7xl mx-auto">
       <Breadcrumb 
         items={[
           { label: 'Execuções', href: '/executions' },
@@ -34,9 +34,9 @@ export const ExecutionView: React.FC = () => {
         action={<StatusBadge status={execution.status} />}
       />
 
-      <div className="bg-white/50 dark:bg-gray-800/50 backdrop-blur-md rounded-2xl border border-gray-200/50 dark:border-gray-700/50 p-6 shadow-sm">
+      <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
         <Tabs defaultValue="summary" className="w-full">
-          <TabsList className="mb-4">
+          <TabsList className="mb-6 bg-slate-100 p-1 rounded-lg">
             <TabsTrigger value="summary">Resumo</TabsTrigger>
             <TabsTrigger value="pending">Pendentes</TabsTrigger>
             <TabsTrigger value="conciliations">Conciliados</TabsTrigger>

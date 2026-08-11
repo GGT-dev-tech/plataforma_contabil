@@ -93,11 +93,11 @@ export const StagingGrid: React.FC = () => {
 
   const getTipoBadge = (tipo: string) => {
     switch (tipo) {
-      case 'RECEITA': return <span className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-1 rounded text-xs font-semibold">Receita</span>;
-      case 'DESPESA': return <span className="bg-red-500/20 text-red-400 border border-red-500/30 px-2 py-1 rounded text-xs font-semibold">Despesa</span>;
-      case 'EXTRATO': return <span className="bg-blue-500/20 text-blue-400 border border-blue-500/30 px-2 py-1 rounded text-xs font-semibold">Extrato</span>;
-      case 'DINHEIRO': return <span className="bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 px-2 py-1 rounded text-xs font-semibold">Caixa</span>;
-      default: return <span className="bg-white/10 text-gray-300 border border-white/20 px-2 py-1 rounded text-xs font-semibold">{tipo}</span>;
+      case 'RECEITA': return <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded text-xs font-semibold">Receita</span>;
+      case 'DESPESA': return <span className="bg-red-50 text-red-700 border border-red-200 px-2 py-0.5 rounded text-xs font-semibold">Despesa</span>;
+      case 'EXTRATO': return <span className="bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded text-xs font-semibold">Extrato</span>;
+      case 'DINHEIRO': return <span className="bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded text-xs font-semibold">Caixa</span>;
+      default: return <span className="bg-slate-100 text-slate-700 border border-slate-200 px-2 py-0.5 rounded text-xs font-semibold">{tipo}</span>;
     }
   };
 
@@ -110,14 +110,14 @@ export const StagingGrid: React.FC = () => {
         description="Confira e ajuste as movimentações em massa antes de processar a conciliação final."
         action={
           <div className="flex gap-3">
-            <button onClick={handleDownloadTemplate} className="glass-button flex items-center gap-2">
-              <Download className="w-4 h-4" />
+            <button onClick={handleDownloadTemplate} className="bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2">
+              <Download className="w-4 h-4 text-slate-500" />
               <span>Baixar Modelo</span>
             </button>
             <button 
               onClick={handleProcessStaging} 
               disabled={items.length === 0 || processing}
-              className="glass-button-primary flex items-center gap-2"
+              className="bg-primary-600 hover:bg-primary-700 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-sm transition-colors flex items-center gap-2 disabled:opacity-50"
             >
               {processing ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
               <span>Aprovar e Iniciar Conciliação</span>
@@ -127,15 +127,15 @@ export const StagingGrid: React.FC = () => {
       />
 
       {/* Tabs Filter */}
-      <div className="flex space-x-2 border-b border-white/10 pb-2">
+      <div className="flex space-x-2 border-b border-slate-200 pb-2">
         {['ALL', 'RECEITA', 'DESPESA', 'EXTRATO', 'DINHEIRO'].map(tab => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
             className={`px-4 py-2 text-sm font-medium rounded-lg transition-all ${
               activeTab === tab 
-                ? 'bg-primary-500/20 text-primary-300 border border-primary-500/30' 
-                : 'text-gray-400 hover:bg-white/5 border border-transparent'
+                ? 'bg-primary-50 text-primary-700 border border-primary-200 font-semibold' 
+                : 'text-slate-600 hover:bg-slate-100 border border-transparent'
             }`}
           >
             {tab === 'ALL' ? 'Todos' : tab}
@@ -144,10 +144,10 @@ export const StagingGrid: React.FC = () => {
       </div>
 
       {/* Data Table */}
-      <div className="glass rounded-2xl overflow-hidden border border-white/10 shadow-2xl">
+      <div className="bg-white rounded-xl overflow-hidden border border-slate-200 shadow-sm">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm text-gray-300">
-            <thead className="bg-white/5 border-b border-white/10 uppercase text-xs font-semibold tracking-wider text-gray-400">
+          <table className="w-full text-left text-sm text-slate-700">
+            <thead className="bg-slate-50 border-b border-slate-200 uppercase text-xs font-semibold tracking-wider text-slate-500">
               <tr>
                 <th className="p-4">Tipo</th>
                 <th className="p-4">Data</th>
@@ -158,17 +158,17 @@ export const StagingGrid: React.FC = () => {
                 <th className="p-4 text-center">Ações</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-white/5">
+            <tbody className="divide-y divide-slate-100">
               {loading ? (
                 <tr>
-                  <td colSpan={7} className="p-12 text-center text-gray-500">
-                    <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-4 text-primary-500" />
+                  <td colSpan={7} className="p-12 text-center text-slate-500">
+                    <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-4 text-primary-600" />
                     Carregando registros...
                   </td>
                 </tr>
               ) : filteredItems.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="p-12 text-center text-gray-500">
+                  <td colSpan={7} className="p-12 text-center text-slate-500">
                     <div className="text-xl mb-2">📭</div>
                     Nenhum registro encontrado.
                   </td>
@@ -178,7 +178,7 @@ export const StagingGrid: React.FC = () => {
                   const isEditing = editingId === item.id;
 
                   return (
-                    <tr key={item.id} className="hover:bg-white/5 transition-colors group">
+                    <tr key={item.id} className="hover:bg-slate-50 transition-colors group">
                       <td className="p-4">{getTipoBadge(item.tipo)}</td>
                       <td className="p-4 whitespace-nowrap">
                         {isEditing ? (
@@ -186,62 +186,62 @@ export const StagingGrid: React.FC = () => {
                             type="date" 
                             value={editForm.data || ''} 
                             onChange={e => setEditForm({ ...editForm, data: e.target.value })}
-                            className="glass-input p-1"
+                            className="bg-white border border-slate-300 rounded px-2 py-1 text-sm text-slate-800"
                           />
                         ) : item.data}
                       </td>
-                      <td className="p-4 font-medium text-gray-200">
+                      <td className="p-4 font-medium text-slate-800">
                         {isEditing ? (
                           <input 
                             type="text" 
                             value={editForm.descricao || ''} 
                             onChange={e => setEditForm({ ...editForm, descricao: e.target.value })}
-                            className="glass-input p-1 w-full"
+                            className="bg-white border border-slate-300 rounded px-2 py-1 text-sm text-slate-800 w-full"
                           />
                         ) : item.descricao}
                       </td>
-                      <td className="p-4 text-gray-400 group-hover:text-gray-300 transition-colors">
+                      <td className="p-4 text-slate-500">
                         {isEditing ? (
                           <input 
                             type="text" 
                             value={editForm.entidade_nome || ''} 
                             onChange={e => setEditForm({ ...editForm, entidade_nome: e.target.value })}
-                            className="glass-input p-1 w-full"
+                            className="bg-white border border-slate-300 rounded px-2 py-1 text-sm text-slate-800 w-full"
                           />
                         ) : (item.entidade_nome || '-')}
                       </td>
-                      <td className={`p-4 text-right font-mono font-semibold whitespace-nowrap ${item.valor < 0 ? 'text-red-400' : 'text-emerald-400'}`}>
+                      <td className={`p-4 text-right font-mono font-semibold whitespace-nowrap ${item.valor < 0 ? 'text-red-600' : 'text-emerald-600'}`}>
                         {isEditing ? (
                           <input 
                             type="number" 
                             step="0.01"
                             value={editForm.valor || 0} 
                             onChange={e => setEditForm({ ...editForm, valor: parseFloat(e.target.value) })}
-                            className="glass-input p-1 w-24 text-right"
+                            className="bg-white border border-slate-300 rounded px-2 py-1 text-sm text-slate-800 w-24 text-right"
                           />
                         ) : `R$ ${Math.abs(item.valor).toFixed(2)}`}
                       </td>
-                      <td className="p-4 text-gray-500">
+                      <td className="p-4 text-slate-500">
                         {isEditing ? (
                           <input 
                             type="text" 
                             value={editForm.conta_origem || editForm.conta_destino || ''} 
                             onChange={e => setEditForm({ ...editForm, conta_origem: e.target.value, conta_destino: e.target.value })}
-                            className="glass-input p-1 w-full"
+                            className="bg-white border border-slate-300 rounded px-2 py-1 text-sm text-slate-800 w-full"
                           />
                         ) : (item.conta_origem || item.conta_destino || '-')}
                       </td>
                       <td className="p-4 text-center">
                         {isEditing ? (
-                          <button onClick={() => handleSave(item.id)} className="p-2 text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 rounded-lg transition-colors">
+                          <button onClick={() => handleSave(item.id)} className="p-1.5 text-emerald-600 bg-emerald-50 hover:bg-emerald-100 rounded-md border border-emerald-200 transition-colors">
                             <Save className="w-4 h-4" />
                           </button>
                         ) : (
                           <div className="flex justify-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button onClick={() => handleEdit(item)} className="p-2 text-primary-400 bg-primary-500/10 hover:bg-primary-500/20 rounded-lg transition-colors">
+                            <button onClick={() => handleEdit(item)} className="p-1.5 text-primary-600 bg-primary-50 hover:bg-primary-100 rounded-md border border-primary-200 transition-colors">
                               <Edit3 className="w-4 h-4" />
                             </button>
-                            <button onClick={() => handleDelete(item.id)} className="p-2 text-red-400 bg-red-500/10 hover:bg-red-500/20 rounded-lg transition-colors">
+                            <button onClick={() => handleDelete(item.id)} className="p-1.5 text-red-600 bg-red-50 hover:bg-red-100 rounded-md border border-red-200 transition-colors">
                               <Trash2 className="w-4 h-4" />
                             </button>
                           </div>

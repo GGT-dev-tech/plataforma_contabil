@@ -38,7 +38,7 @@ export const DivergenciesTab: React.FC<{ executionId: string }> = ({ executionId
     { 
       header: 'Valor', 
       accessor: (d: any) => (
-        <span className={d.valor < 0 ? 'text-red-500 font-medium' : 'text-green-500 font-medium'}>
+        <span className={d.valor < 0 ? 'text-red-600 font-semibold' : 'text-emerald-600 font-semibold'}>
           R$ {parseFloat(d.valor).toFixed(2)}
         </span>
       )
@@ -46,7 +46,7 @@ export const DivergenciesTab: React.FC<{ executionId: string }> = ({ executionId
     { 
       header: 'Motivo', 
       accessor: (d: any) => (
-        <span className="text-sm bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 px-2 py-1 rounded">
+        <span className="text-xs font-semibold bg-red-50 text-red-700 border border-red-200 px-2.5 py-1 rounded-md">
           {d.motivo}
         </span>
       )
@@ -54,7 +54,7 @@ export const DivergenciesTab: React.FC<{ executionId: string }> = ({ executionId
   ];
 
   return (
-    <div className="bg-white/30 dark:bg-gray-900/30 rounded-xl overflow-hidden">
+    <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
       <DataTable 
         data={divergencies} 
         columns={columns} 
