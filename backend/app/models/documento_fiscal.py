@@ -194,4 +194,4 @@ class ParcelaDocumentoFiscal(AuditableBase):
     id_externo_erp = Column(String(100), nullable=True, index=True)
 
     documento = relationship("DocumentoFiscalV2", back_populates="parcelas")
-    movimentacao = relationship("MovimentacaoBancaria")
+    movimentacao = relationship("MovimentacaoFinanceira")
