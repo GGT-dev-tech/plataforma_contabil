@@ -51,11 +51,9 @@ def list_contas(
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(get_current_user)
 ):
-    query = db.query(TesourariaContaBancaria)
-    if current_user.role != Role.ADMIN:
-        query = query.filter(TesourariaContaBancaria.empresa_id == current_user.empresa_id)
-    contas = query.all()
-    return [_conta_to_dict(c) for c in contas]
+    from app.modules.tesouraria.queries.get_contas import GetContasQueryHandler
+    tenant_id = None if current_user.role == Role.ADMIN else str(current_user.empresa_id)
+    return GetContasQueryHandler.execute(db, tenant_id)
 
 @router.post("/contas", response_model=dict, status_code=201)
 def create_conta(
@@ -63,20 +61,15 @@ def create_conta(
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(get_current_user)
 ):
-    if not current_user.empresa_id and current_user.role != Role.ADMIN:
-        raise HTTPException(status_code=403, detail="Usuário sem empresa vinculada.")
+    from app.core.uow import SQLAlchemyUnitOfWork
+    from app.modules.tesouraria.commands.create_conta import CreateContaCommandHandler, ContaCreatePayload
+    
+    tenant_id = None if current_user.role == Role.ADMIN else str(current_user.empresa_id)
+    
+    with SQLAlchemyUnitOfWork(db, tenant_id=tenant_id) as uow:
+        cmd_payload = ContaCreatePayload(**payload.dict())
+        conta = CreateContaCommandHandler.execute(uow, cmd_payload)
         
-    conta = TesourariaContaBancaria(
-        empresa_id=current_user.empresa_id,
-        banco=payload.banco,
-        agencia=payload.agencia,
-        conta=payload.conta,
-        descricao=payload.descricao,
-        saldo_atual=payload.saldo_inicial
-    )
-    db.add(conta)
-    db.commit()
-    db.refresh(conta)
     return _conta_to_dict(conta)
 
 @router.get("/transacoes", response_model=List[dict])
@@ -85,16 +78,9 @@ def list_transacoes(
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(get_current_user)
 ):
-    query = db.query(TesourariaTransacao, TesourariaContaBancaria).join(TesourariaContaBancaria, TesourariaTransacao.conta_bancaria_id == TesourariaContaBancaria.id)
-    
-    if current_user.role != Role.ADMIN:
-        query = query.filter(TesourariaTransacao.empresa_id == current_user.empresa_id)
-        
-    if conta_id:
-        query = query.filter(TesourariaTransacao.conta_bancaria_id == conta_id)
-        
-    results = query.order_by(TesourariaTransacao.data_transacao.desc()).limit(100).all()
-    return [_transacao_to_dict(t, c.descricao) for t, c in results]
+    from app.modules.tesouraria.queries.get_transacoes import GetTransacoesQueryHandler
+    tenant_id = None if current_user.role == Role.ADMIN else str(current_user.empresa_id)
+    return GetTransacoesQueryHandler.execute(db, tenant_id, conta_id)
 
 @router.post("/transacoes", response_model=dict, status_code=201)
 def create_transacao(
@@ -102,28 +88,17 @@ def create_transacao(
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(get_current_user)
 ):
-    conta = db.query(TesourariaContaBancaria).filter(TesourariaContaBancaria.id == payload.conta_bancaria_id).first()
-    if not conta:
-        raise HTTPException(status_code=404, detail="Conta não encontrada.")
-    if current_user.role != Role.ADMIN and str(conta.empresa_id) != str(current_user.empresa_id):
-        raise HTTPException(status_code=403)
-        
-    transacao = TesourariaTransacao(
-        empresa_id=conta.empresa_id,
-        conta_bancaria_id=conta.id,
-        data_transacao=payload.data_transacao,
-        tipo=payload.tipo,
-        valor=payload.valor,
-        descricao=payload.descricao
-    )
+    from app.core.uow import SQLAlchemyUnitOfWork
+    from app.modules.tesouraria.commands.create_transacao import CreateTransacaoCommandHandler, TransacaoCreatePayload
     
-    # Atualiza saldo
-    if payload.tipo == TipoTransacao.ENTRADA:
-        conta.saldo_atual += payload.valor
-    else:
-        conta.saldo_atual -= payload.valor
+    tenant_id = None if current_user.role == Role.ADMIN else str(current_user.empresa_id)
+    
+    with SQLAlchemyUnitOfWork(db, tenant_id=tenant_id) as uow:
+        cmd_payload = TransacaoCreatePayload(**payload.dict())
+        transacao = CreateTransacaoCommandHandler.execute(uow, cmd_payload)
         
-    db.add(transacao)
-    db.commit()
-    db.refresh(transacao)
-    return _transacao_to_dict(transacao, conta.descricao)
+        # O CommandHandler já garante que a conta existe e retorna a transacao.
+        # Precisamos do nome da conta pro retorno dict
+        conta = uow.contas.get(uow.session, transacao.conta_bancaria_id)
+        
+    return _transacao_to_dict(transacao, conta.descricao if conta else "")

@@ -7,18 +7,38 @@ CreateSchemaType = TypeVar("CreateSchemaType")
 UpdateSchemaType = TypeVar("UpdateSchemaType")
 
 class BaseRepository(Generic[ModelType]):
-    def __init__(self, model: Type[ModelType]):
+    def __init__(self, model: Type[ModelType], tenant_id: Optional[str] = None):
         """
         Classe base CRUD genérica.
         :param model: Classe do modelo SQLAlchemy.
+        :param tenant_id: Opcional, ID do tenant (empresa) para forçar isolamento Multi-Tenant.
         """
         self.model = model
+        self.tenant_id = tenant_id
+
+    def _apply_tenant_filter(self, query):
+        if self.tenant_id and hasattr(self.model, "empresa_id"):
+            from sqlalchemy.dialects.postgresql import UUID
+            import uuid
+            
+            # Garantir conversão caso tenant_id seja string e empresa_id seja UUID
+            try:
+                tenant_uuid = uuid.UUID(self.tenant_id)
+            except ValueError:
+                tenant_uuid = self.tenant_id
+                
+            return query.filter(self.model.empresa_id == tenant_uuid)
+        return query
 
     def get(self, db: Session, id: Any) -> Optional[ModelType]:
-        return db.query(self.model).filter(self.model.id == id).first()
+        query = db.query(self.model).filter(self.model.id == id)
+        query = self._apply_tenant_filter(query)
+        return query.first()
 
     def get_multi(self, db: Session, *, skip: int = 0, limit: int = 100) -> List[ModelType]:
-        return db.query(self.model).offset(skip).limit(limit).all()
+        query = db.query(self.model)
+        query = self._apply_tenant_filter(query)
+        return query.offset(skip).limit(limit).all()
 
     def create(self, db: Session, *, obj_in: Union[CreateSchemaType, Dict[str, Any]]) -> ModelType:
         if isinstance(obj_in, dict):

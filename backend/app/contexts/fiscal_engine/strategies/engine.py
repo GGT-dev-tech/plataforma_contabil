@@ -34,10 +34,8 @@ class TaxEngine:
             
     def executar_calculo_mensal(self, competencia: str, dados_faturamento: Dict[str, Any]) -> ApuracaoFiscal:
         """
-        Executa a apuração e salva no banco de dados.
+        Executa a apuração e retorna a entidade calculada (sem persistir).
+        A persistência deve ser orquestrada pelo Command Handler / UoW.
         """
         apuracao = self.strategy.apurar_impostos(competencia, dados_faturamento)
-        self.db.add(apuracao)
-        self.db.commit()
-        self.db.refresh(apuracao)
         return apuracao

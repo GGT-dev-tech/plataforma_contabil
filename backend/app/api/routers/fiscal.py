@@ -43,21 +43,20 @@ def apurar_impostos(
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(get_current_user)
 ):
+    from app.core.uow import SQLAlchemyUnitOfWork
+    from app.modules.fiscal.commands.apurar_impostos import ApurarImpostosCommandHandler, ApurarImpostosPayload
+    
     if not current_user.empresa_id:
         raise HTTPException(status_code=403, detail="Usuário sem empresa vinculada.")
         
-    empresa = db.query(EmpresaFiscal).filter(EmpresaFiscal.id == current_user.empresa_id).first()
-    if not empresa:
-        raise HTTPException(status_code=404, detail="Empresa Fiscal não encontrada.")
+    with SQLAlchemyUnitOfWork(db, tenant_id=str(current_user.empresa_id)) as uow:
+        cmd_payload = ApurarImpostosPayload(
+            competencia=payload.competencia,
+            dados_faturamento=payload.dados_faturamento
+        )
+        apuracao = ApurarImpostosCommandHandler.execute(uow, cmd_payload)
         
-    engine = TaxEngine(db, empresa)
-    
-    try:
-        apuracao = engine.executar_calculo_mensal(payload.competencia, payload.dados_faturamento)
-        return _apuracao_to_dict(apuracao)
-    except Exception as e:
-        db.rollback()
-        raise HTTPException(status_code=400, detail=str(e))
+    return _apuracao_to_dict(apuracao)
 
 @router.get("/apuracoes", response_model=List[dict])
 def list_apuracoes(
@@ -65,12 +64,9 @@ def list_apuracoes(
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(get_current_user)
 ):
+    from app.modules.fiscal.queries.get_apuracoes import GetApuracoesQueryHandler
+    
     if not current_user.empresa_id:
         raise HTTPException(status_code=403)
         
-    query = db.query(ApuracaoFiscal).filter(ApuracaoFiscal.empresa_id == current_user.empresa_id)
-    if competencia:
-        query = query.filter(ApuracaoFiscal.competencia == competencia)
-        
-    apuracoes = query.order_by(ApuracaoFiscal.competencia.desc()).all()
-    return [_apuracao_to_dict(a) for a in apuracoes]
+    return GetApuracoesQueryHandler.execute(db, str(current_user.empresa_id), competencia)

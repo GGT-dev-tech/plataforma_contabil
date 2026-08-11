@@ -59,11 +59,9 @@ def list_clientes(
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(get_current_user)
 ):
-    query = db.query(Cliente)
-    if current_user.role != Role.ADMIN:
-        query = query.filter(Cliente.empresa_id == current_user.empresa_id)
-    clientes = query.order_by(Cliente.nome.asc()).limit(100).all()
-    return [_cliente_to_dict(c) for c in clientes]
+    from app.modules.crm.queries.get_clientes import GetClientesQueryHandler
+    tenant_id = None if current_user.role == Role.ADMIN else str(current_user.empresa_id)
+    return GetClientesQueryHandler.execute(db, tenant_id)
 
 @router.post("/clientes", response_model=dict, status_code=201)
 def create_cliente(
@@ -71,20 +69,15 @@ def create_cliente(
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(get_current_user)
 ):
-    if not current_user.empresa_id and current_user.role != Role.ADMIN:
-        raise HTTPException(status_code=403, detail="Usuário sem empresa vinculada.")
+    from app.core.uow import SQLAlchemyUnitOfWork
+    from app.modules.crm.commands.create_cliente import CreateClienteCommandHandler, ClienteCreatePayload
+    
+    tenant_id = None if current_user.role == Role.ADMIN else str(current_user.empresa_id)
+    
+    with SQLAlchemyUnitOfWork(db, tenant_id=tenant_id) as uow:
+        cmd_payload = ClienteCreatePayload(**payload.dict())
+        cliente = CreateClienteCommandHandler.execute(uow, cmd_payload)
         
-    cliente = Cliente(
-        empresa_id=current_user.empresa_id,
-        nome=payload.nome,
-        email=payload.email,
-        telefone=payload.telefone,
-        cpf_cnpj=payload.cpf_cnpj,
-        renda_mensal=payload.renda_mensal
-    )
-    db.add(cliente)
-    db.commit()
-    db.refresh(cliente)
     return _cliente_to_dict(cliente)
 
 @router.get("/propostas", response_model=List[dict])
@@ -94,25 +87,9 @@ def list_propostas(
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(get_current_user)
 ):
-    query = db.query(PropostaVenda, Cliente).join(Cliente, PropostaVenda.cliente_id == Cliente.id)
-    
-    if current_user.role != Role.ADMIN:
-        query = query.filter(PropostaVenda.empresa_id == current_user.empresa_id)
-        
-    if obra_id:
-        query = query.filter(PropostaVenda.obra_id == obra_id)
-    if status:
-        query = query.filter(PropostaVenda.status == status)
-        
-    results = query.order_by(PropostaVenda.data_proposta.desc()).all()
-    
-    propostas = []
-    for prop, cli in results:
-        d = _proposta_to_dict(prop)
-        d["cliente_nome"] = cli.nome
-        propostas.append(d)
-        
-    return propostas
+    from app.modules.crm.queries.get_propostas import GetPropostasQueryHandler
+    tenant_id = None if current_user.role == Role.ADMIN else str(current_user.empresa_id)
+    return GetPropostasQueryHandler.execute(db, tenant_id, obra_id, status.value if status else None)
 
 @router.post("/propostas", response_model=dict, status_code=201)
 def create_proposta(
@@ -120,22 +97,15 @@ def create_proposta(
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(get_current_user)
 ):
-    if not current_user.empresa_id and current_user.role != Role.ADMIN:
-        raise HTTPException(status_code=403, detail="Usuário sem empresa vinculada.")
+    from app.core.uow import SQLAlchemyUnitOfWork
+    from app.modules.crm.commands.create_proposta import CreatePropostaCommandHandler, PropostaCreatePayload
+    
+    tenant_id = None if current_user.role == Role.ADMIN else str(current_user.empresa_id)
+    
+    with SQLAlchemyUnitOfWork(db, tenant_id=tenant_id) as uow:
+        cmd_payload = PropostaCreatePayload(**payload.dict())
+        proposta = CreatePropostaCommandHandler.execute(uow, cmd_payload)
         
-    proposta = PropostaVenda(
-        empresa_id=current_user.empresa_id,
-        obra_id=payload.obra_id,
-        cliente_id=payload.cliente_id,
-        valor_negociado=payload.valor_negociado,
-        unidade_descricao=payload.unidade_descricao,
-        status=StatusProposta.NOVA,
-        data_proposta=payload.data_proposta,
-        notas=payload.notas
-    )
-    db.add(proposta)
-    db.commit()
-    db.refresh(proposta)
     return _proposta_to_dict(proposta)
 
 @router.patch("/propostas/{proposta_id}/status", response_model=dict)
@@ -145,13 +115,13 @@ def update_proposta_status(
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(get_current_user)
 ):
-    proposta = db.query(PropostaVenda).filter(PropostaVenda.id == proposta_id).first()
-    if not proposta:
-        raise HTTPException(status_code=404)
-    if current_user.role != Role.ADMIN and str(proposta.empresa_id) != str(current_user.empresa_id):
-        raise HTTPException(status_code=403)
+    from app.core.uow import SQLAlchemyUnitOfWork
+    from app.modules.crm.commands.update_proposta_status import UpdatePropostaStatusCommandHandler, PropostaUpdateStatusPayload
+    
+    tenant_id = None if current_user.role == Role.ADMIN else str(current_user.empresa_id)
+    
+    with SQLAlchemyUnitOfWork(db, tenant_id=tenant_id) as uow:
+        cmd_payload = PropostaUpdateStatusPayload(status=payload.status)
+        proposta = UpdatePropostaStatusCommandHandler.execute(uow, proposta_id, cmd_payload)
         
-    proposta.status = payload.status
-    db.commit()
-    db.refresh(proposta)
     return _proposta_to_dict(proposta)

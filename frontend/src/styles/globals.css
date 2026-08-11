@@ -7,18 +7,13 @@
   --color-primary-400: #818cf8;
   --color-primary-500: #6366f1;
   --color-primary-600: #4f46e5;
+  --color-primary-700: #4338ca;
   
   --color-accent-400: #c084fc;
   --color-accent-500: #a855f7;
   
-  --color-dark-bg: #0b0f19;
-  --color-dark-surface: #111827;
-  --color-dark-surface-elevated: #1f2937;
-  
   --animate-fade-in: fade-in 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   --animate-slide-up: slide-up 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-  --animate-pulse-slow: pulse-slow 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  --animate-blob: blob 7s infinite;
 }
 
 @keyframes fade-in {
@@ -31,51 +26,40 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
-@keyframes pulse-slow {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
-}
-
-@keyframes blob {
-  0% { transform: translate(0px, 0px) scale(1); }
-  33% { transform: translate(30px, -50px) scale(1.1); }
-  66% { transform: translate(-20px, 20px) scale(0.9); }
-  100% { transform: translate(0px, 0px) scale(1); }
-}
-
 @layer base {
   body {
-    @apply bg-[#0b0f19] text-gray-100 transition-colors duration-300 font-sans antialiased overflow-hidden selection:bg-primary-500/30 selection:text-white;
+    @apply bg-slate-50 text-slate-900 transition-colors duration-300 font-sans antialiased overflow-hidden selection:bg-primary-500/30 selection:text-primary-900;
   }
 }
 
-/* Premium Glass Utilities */
+/* Premium Light Theme Utilities */
 @layer components {
+  /* Substituindo o antigo "glass" fraco e escuro por painéis brancos robustos */
   .glass {
-    @apply bg-[#111827]/60 backdrop-blur-xl border border-white/5 shadow-2xl transition-all duration-300;
+    @apply bg-white border border-slate-200 shadow-sm transition-all duration-300;
   }
   
   .glass:hover {
-    @apply bg-[#111827]/80 border-white/10 shadow-primary-500/10;
+    @apply shadow-md border-slate-300;
   }
 
   .glass-panel {
-    @apply bg-[#1f2937]/50 backdrop-blur-2xl border border-white/10 shadow-lg;
+    @apply bg-white border border-slate-200 shadow-md rounded-xl;
   }
   
   .glass-input {
-    @apply bg-black/20 border border-white/10 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-transparent transition-all backdrop-blur-sm;
+    @apply bg-white border border-slate-300 rounded-lg px-4 py-2 text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all;
   }
   
   .glass-button {
-    @apply relative overflow-hidden bg-white/5 hover:bg-white/10 text-white font-medium rounded-lg px-4 py-2 border border-white/10 transition-all active:scale-95 shadow-lg;
+    @apply relative overflow-hidden bg-white hover:bg-slate-50 text-slate-700 font-medium rounded-lg px-4 py-2 border border-slate-300 transition-all active:scale-95 shadow-sm;
   }
   
   .glass-button-primary {
-    @apply relative overflow-hidden bg-primary-600/80 hover:bg-primary-500/90 text-white font-medium rounded-lg px-4 py-2 border border-primary-400/30 transition-all active:scale-95 shadow-lg shadow-primary-500/20;
+    @apply relative overflow-hidden bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-lg px-4 py-2 border border-transparent transition-all active:scale-95 shadow-sm;
   }
   
   .text-gradient {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary-400 to-accent-400;
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary-600 to-accent-500;
   }
 }

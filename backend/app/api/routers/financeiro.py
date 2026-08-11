@@ -111,20 +111,21 @@ def update_titulo_status(
     db: Session = Depends(get_db),
     current_user: Usuario = Depends(get_current_user)
 ):
-    titulo = db.query(TituloFinanceiro).filter(TituloFinanceiro.id == titulo_id).first()
-    if not titulo:
-        raise HTTPException(status_code=404)
-    if current_user.role != Role.ADMIN and str(titulo.empresa_id) != str(current_user.empresa_id):
-        raise HTTPException(status_code=403)
+    from app.core.uow import SQLAlchemyUnitOfWork
+    from app.modules.financeiro.commands.update_titulo_status import UpdateTituloStatusCommandHandler, UpdateTituloStatusPayload
+    
+    # Valida Admin vs. Empresa: O Tenant ID é a empresa atual a menos que seja ADMIN (aí deixamos None para liberar, ou exigimos empresa alvo?)
+    # Para simplificar na Rota Piloto: ADMIN = None, NORMAL = user.empresa_id
+    tenant_id = None if current_user.role == Role.ADMIN else str(current_user.empresa_id)
+    
+    with SQLAlchemyUnitOfWork(db, tenant_id=tenant_id) as uow:
+        cmd_payload = UpdateTituloStatusPayload(
+            status=payload.status,
+            data_pagamento=payload.data_pagamento,
+            valor_pago=payload.valor_pago
+        )
+        titulo = UpdateTituloStatusCommandHandler.execute(uow, titulo_id, cmd_payload)
         
-    titulo.status = payload.status
-    if payload.data_pagamento:
-        titulo.data_pagamento = payload.data_pagamento
-    if payload.valor_pago is not None:
-        titulo.valor_pago = payload.valor_pago
-        
-    db.commit()
-    db.refresh(titulo)
     return _titulo_to_dict(titulo)
 
 @router.post("/conciliar", response_model=dict)

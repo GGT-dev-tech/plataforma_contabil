@@ -18,8 +18,7 @@ export const ExecutionsList: React.FC = () => {
   if (error) return <div className="text-red-500 p-4">Erro ao carregar execuções.</div>;
 
   return (
-    <div className="space-y-8 animate-fade-in relative">
-      <div className="absolute top-0 right-0 w-64 h-64 bg-primary-500/10 rounded-full blur-[80px] -z-10 pointer-events-none"></div>
+    <div className="space-y-6 animate-fade-in relative">
       
       <PageHeader 
         title="Execuções de Conciliação" 
@@ -28,18 +27,17 @@ export const ExecutionsList: React.FC = () => {
           user?.role !== 'AUDITOR' && (
             <button 
               onClick={() => navigate('/executions/new')} 
-              className="glass-button-primary flex items-center gap-2 px-6 py-2.5 group"
+              className="glass-button-primary flex items-center gap-2 px-5 py-2 group"
             >
               <Plus className="w-4 h-4 transition-transform group-hover:rotate-90" />
-              <span className="font-semibold tracking-wide">Nova Execução</span>
-              <Sparkles className="w-4 h-4 opacity-50 absolute top-1 right-2" />
+              <span className="font-medium tracking-wide">Nova Execução</span>
             </button>
           )
         }
       />
 
       {!executions || executions.length === 0 ? (
-        <div className="glass-panel rounded-2xl p-8 text-center border border-white/5">
+        <div className="glass-panel rounded-xl p-8 text-center bg-white border border-slate-200">
           <EmptyState 
             icon={ListX} 
             title="Nenhuma execução encontrada" 
@@ -52,8 +50,8 @@ export const ExecutionsList: React.FC = () => {
           keyExtractor={(exec: any) => exec.id}
           onRowClick={(exec: any) => navigate(`/executions/${exec.id}`)}
           columns={[
-            { header: 'ID', accessor: (exec: any) => <span className="font-mono text-xs text-primary-400 bg-primary-900/30 px-2 py-1 rounded border border-primary-500/20 shadow-inner">{exec.id.substring(0, 8)}</span> },
-            { header: 'Data Início', accessor: (exec: any) => new Date(exec.data_inicio).toLocaleString() },
+            { header: 'ID', accessor: (exec: any) => <span className="font-mono text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded border border-slate-200">{exec.id.substring(0, 8)}</span> },
+            { header: 'Data Início', accessor: (exec: any) => <span className="text-sm text-slate-700">{new Date(exec.data_inicio).toLocaleString()}</span> },
             { header: 'Status', accessor: (exec: any) => <StatusBadge status={exec.status} /> }
           ]}
         />

@@ -7,7 +7,7 @@ export const WorkspaceSelector: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-gray-400 text-sm animate-pulse">
+      <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-50 border border-slate-200 text-slate-500 text-sm animate-pulse">
         <Building2 className="w-4 h-4"/> Carregando...
       </div>
     );
@@ -15,7 +15,7 @@ export const WorkspaceSelector: React.FC = () => {
 
   if (workspaces.length === 0) {
     return (
-      <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+      <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-50 border border-red-200 text-red-600 text-sm">
         <Building2 className="w-4 h-4"/> Nenhuma Empresa Encontrada
       </div>
     );
@@ -23,22 +23,21 @@ export const WorkspaceSelector: React.FC = () => {
 
   return (
     <div className="relative group">
-      <div className="absolute -inset-0.5 bg-gradient-to-r from-primary-500/20 to-accent-500/20 rounded-xl blur opacity-0 group-hover:opacity-100 transition duration-500"></div>
-      <div className="relative flex items-center bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl px-4 py-2 transition-all duration-300">
-        <Building2 className="w-4 h-4 text-primary-400 mr-2" />
+      <div className="relative flex items-center bg-white hover:bg-slate-50 border border-slate-300 rounded-lg px-4 py-2 transition-all duration-300 shadow-sm focus-within:ring-2 focus-within:ring-primary-500 focus-within:border-primary-500">
+        <Building2 className="w-4 h-4 text-primary-600 mr-2" />
         <select
           value={activeWorkspaceId || ''}
           onChange={(e) => setActiveWorkspaceId(e.target.value)}
-          className="bg-transparent text-sm font-medium text-white outline-none cursor-pointer focus:ring-0 min-w-[180px] appearance-none pr-6"
+          className="bg-transparent text-sm font-medium text-slate-800 outline-none cursor-pointer focus:ring-0 min-w-[180px] appearance-none pr-6"
         >
-          <option value="" disabled className="bg-gray-900 text-gray-500">Selecione uma Empresa</option>
+          <option value="" disabled className="text-slate-500">Selecione uma Empresa</option>
           {workspaces.map((ws) => (
-            <option key={ws.id} value={ws.id} className="bg-gray-900 text-gray-200">
+            <option key={ws.id} value={ws.id} className="text-slate-800 bg-white">
               {ws.nome_fantasia || ws.razao_social}
             </option>
           ))}
         </select>
-        <ChevronDown className="w-4 h-4 text-gray-400 absolute right-4 pointer-events-none" />
+        <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 pointer-events-none" />
       </div>
     </div>
   );

@@ -4,23 +4,22 @@ import { Settings, Landmark, FileSpreadsheet, CheckCheck, Sparkles, Building2, B
 
 export const Sidebar: React.FC = () => {
   const navItemClass = ({ isActive }: { isActive: boolean }) => `
-    flex items-center px-4 py-3 rounded-xl transition-all duration-300 group font-medium text-sm my-1 relative overflow-hidden
+    flex items-center px-3 py-2.5 rounded-lg transition-all duration-200 font-medium text-sm my-1 relative
     ${isActive 
-      ? 'bg-primary-500/15 text-primary-400 border border-primary-500/30 shadow-[inset_0_0_12px_rgba(99,102,241,0.1)]' 
-      : 'text-gray-400 hover:bg-white/5 hover:text-gray-200 border border-transparent'}
+      ? 'bg-primary-50 text-primary-700 font-semibold' 
+      : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'}
   `;
 
   return (
-    <aside className="w-full h-full glass-panel rounded-2xl flex flex-col flex-shrink-0 border border-white/5 shadow-2xl relative">
-      <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent pointer-events-none rounded-2xl"></div>
+    <aside className="w-full h-full bg-white rounded-none sm:rounded-xl flex flex-col flex-shrink-0 border border-slate-200 shadow-sm relative">
       
-      <div className="h-20 flex items-center px-6 border-b border-white/10 relative z-10">
+      <div className="h-16 flex items-center px-6 border-b border-slate-100 relative z-10">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center shadow-lg shadow-primary-500/30">
+          <div className="w-8 h-8 rounded-lg bg-primary-600 flex items-center justify-center shadow-sm">
             <Sparkles className="w-5 h-5 text-white" />
           </div>
-          <h1 className="text-xl font-bold text-white tracking-tight">
-            Plataforma<span className="text-primary-400">.</span>
+          <h1 className="text-xl font-bold text-slate-800 tracking-tight">
+            Plataforma<span className="text-primary-600">.</span>
           </h1>
         </div>
       </div>
@@ -30,27 +29,27 @@ export const Sidebar: React.FC = () => {
         <div>
           <NavLink to="/dashboard" className={navItemClass}>
             <Building2 className="w-4 h-4 mr-3" />
-            Visão Geral (Dashboard)
+            Visão Geral
           </NavLink>
         </div>
         
         <div>
-          <p className="px-4 text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3 flex items-center gap-2">
-            <span className="w-2 h-[1px] bg-gray-500"></span> Motor Financeiro
+          <p className="px-3 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-2">
+            Financeiro
           </p>
           <NavLink to="/receitas-despesas" className={navItemClass}>
             <Landmark className="w-4 h-4 mr-3" />
-            DRE Gerencial (Fluxo)
+            DRE Gerencial
           </NavLink>
           <NavLink to="/executions" className={navItemClass}>
             <CheckCheck className="w-4 h-4 mr-3" />
-            Conciliação (Fuzzy)
+            Conciliação Bancária
           </NavLink>
         </div>
 
         <div>
-          <p className="px-4 text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3 flex items-center gap-2">
-            <span className="w-2 h-[1px] bg-gray-500"></span> Motor Fiscal
+          <p className="px-3 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-2">
+            Fiscal
           </p>
           <NavLink to="/documentos-fiscais" className={navItemClass}>
             <ReceiptText className="w-4 h-4 mr-3" />
@@ -58,29 +57,29 @@ export const Sidebar: React.FC = () => {
           </NavLink>
           <NavLink to="/crm" className={navItemClass}>
             <BarChart3 className="w-4 h-4 mr-3" />
-            Config. Regimes Tributários
+            Regimes Tributários
           </NavLink>
         </div>
 
         <div>
-          <p className="px-4 text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3 flex items-center gap-2">
-            <span className="w-2 h-[1px] bg-gray-500"></span> Motor Contábil
+          <p className="px-3 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-2">
+            Contábil
           </p>
           <NavLink to="/exportacao-contabil" className={navItemClass}>
             <FileSpreadsheet className="w-4 h-4 mr-3" />
-            Geração SPED (Celery)
+            Exportação SPED
           </NavLink>
         </div>
       </nav>
       
-      <div className="p-4 border-t border-white/10 relative z-10 flex flex-col gap-2">
+      <div className="p-4 border-t border-slate-100 relative z-10 flex flex-col gap-1">
         <NavLink to="/settings" className={navItemClass}>
           <Settings className="w-4 h-4 mr-3" />
           Configurações
         </NavLink>
         <NavLink to="/ui" className={navItemClass}>
-          <Sparkles className="w-4 h-4 mr-3" />
-          Design System UI
+          <Sparkles className="w-4 h-4 mr-3 text-accent-500" />
+          Componentes UI
         </NavLink>
       </div>
     </aside>
