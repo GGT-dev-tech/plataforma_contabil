@@ -45,11 +45,15 @@ from .plano_contas import (
     TipoConta,
     GrupoConta,
 )
-from .lancamento_v2 import (
-    LancamentoContabilV2,
+from .ledger import (
+    LancamentoCabecalho,
+    PartidaItem,
+    PeriodoContabil,
     TemplateLancamento,
     TipoPartida,
     StatusLancamento,
+    StatusPeriodo,
+    ModuloOrigem,
 )
 
 __all__ = [
@@ -69,5 +73,6 @@ __all__ = [
     "TipoDocumentoFiscal", "NaturezaOperacao", "StatusDocumentoFiscal",
     "PlanoDeContas", "RegraFiscalMunicipio", "TabelaIRRF",
     "NaturezaConta", "TipoConta", "GrupoConta",
-    "LancamentoContabilV2", "TemplateLancamento", "TipoPartida", "StatusLancamento",
+    "LancamentoCabecalho", "PartidaItem", "PeriodoContabil", 
+    "TemplateLancamento", "TipoPartida", "StatusLancamento", "StatusPeriodo", "ModuloOrigem",
 ]

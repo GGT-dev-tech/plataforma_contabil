@@ -1,7 +1,7 @@
 from typing import List
 from datetime import datetime
 from app.contexts.exportacao.adapters.base import ExportAdapter
-from app.models.lancamento_v2 import LancamentoContabilV2
+from app.models.ledger import LancamentoCabecalho
 
 class SpedEcdAdapter(ExportAdapter):
     """
@@ -26,7 +26,7 @@ class SpedEcdAdapter(ExportAdapter):
         linhas.append("|0990|3|")
         return linhas
 
-    def _gerar_bloco_i(self, lancamentos: List[LancamentoContabilV2]) -> List[str]:
+    def _gerar_bloco_i(self, lancamentos: List[LancamentoCabecalho]) -> List[str]:
         linhas = []
         linhas.append("|I001|0|")
         
@@ -64,7 +64,7 @@ class SpedEcdAdapter(ExportAdapter):
         linhas.append(f"|I990|{len(linhas) + 1}|")
         return linhas
 
-    def exportar(self, lancamentos: List[LancamentoContabilV2]) -> bytes:
+    def exportar(self, lancamentos: List[LancamentoCabecalho]) -> bytes:
         if not lancamentos:
             return b""
             

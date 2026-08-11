@@ -13,22 +13,22 @@ class ExportacaoService:
             "sped_ecd": SpedEcdAdapter()
         }
         
-    def obter_lancamentos(self, empresa_id: Optional[str] = None, obra_id: Optional[str] = None, data_inicio: Optional[str] = None, data_fim: Optional[str] = None) -> List[LancamentoContabilV2]:
-        query = self.db.query(LancamentoContabilV2).filter(LancamentoContabilV2.is_deleted == False)
+    def obter_lancamentos(self, empresa_id: Optional[str] = None, obra_id: Optional[str] = None, data_inicio: Optional[str] = None, data_fim: Optional[str] = None) -> List[LancamentoCabecalho]:
+        query = self.db.query(LancamentoCabecalho).filter(LancamentoCabecalho.is_deleted == False)
         
         if empresa_id:
-            query = query.filter(LancamentoContabilV2.empresa_id == empresa_id)
+            query = query.filter(LancamentoCabecalho.empresa_id == empresa_id)
             
         if obra_id:
-            query = query.filter(LancamentoContabilV2.obra_id == obra_id)
+            query = query.filter(LancamentoCabecalho.obra_id == obra_id)
             
         if data_inicio:
-            query = query.filter(LancamentoContabilV2.data_lancamento >= data_inicio)
+            query = query.filter(LancamentoCabecalho.data_competencia >= data_inicio)
             
         if data_fim:
-            query = query.filter(LancamentoContabilV2.data_lancamento <= data_fim)
+            query = query.filter(LancamentoCabecalho.data_competencia <= data_fim)
             
-        return query.order_by(LancamentoContabilV2.data_lancamento, LancamentoContabilV2.id).all()
+        return query.order_by(LancamentoCabecalho.data_competencia, LancamentoCabecalho.id).all()
         
     def exportar_arquivos(self, formato: str, empresa_id: Optional[str] = None, obra_id: Optional[str] = None, data_inicio: Optional[str] = None, data_fim: Optional[str] = None) -> bytes:
         if formato not in self.adapters:

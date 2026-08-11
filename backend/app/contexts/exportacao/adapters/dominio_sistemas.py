@@ -1,7 +1,7 @@
 from typing import List
 from datetime import datetime
 from app.contexts.exportacao.adapters.base import ExportAdapter
-from app.models.lancamento_v2 import LancamentoContabilV2
+from app.models.ledger import LancamentoCabecalho
 
 class DominioSistemasAdapter(ExportAdapter):
     """
@@ -20,7 +20,7 @@ class DominioSistemasAdapter(ExportAdapter):
     def get_extensao_arquivo(self) -> str:
         return "txt"
 
-    def exportar(self, lancamentos: List[LancamentoContabilV2]) -> bytes:
+    def exportar(self, lancamentos: List[LancamentoCabecalho]) -> bytes:
         linhas = []
         
         # Cabeçalho opcional do domínio

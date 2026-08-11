@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import List
-from app.models.lancamento_v2 import LancamentoContabilV2
+from app.models.ledger import LancamentoCabecalho
 
 class ExportAdapter(ABC):
     """
@@ -19,7 +19,7 @@ class ExportAdapter(ABC):
         pass
 
     @abstractmethod
-    def exportar(self, lancamentos: List[LancamentoContabilV2]) -> bytes:
+    def exportar(self, lancamentos: List[LancamentoCabecalho]) -> bytes:
         """
         Recebe uma lista de lançamentos contábeis em partida dobrada,
         formata de acordo com o layout alvo, e retorna os bytes do arquivo gerado.

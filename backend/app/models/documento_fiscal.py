@@ -160,7 +160,7 @@ class DocumentoFiscalV2(AuditableBase):
     obra = relationship("Obra", back_populates="documentos_fiscais")
     fornecedor = relationship("Fornecedor")
     parcelas = relationship("ParcelaDocumentoFiscal", back_populates="documento", cascade="all, delete-orphan")
-    lancamentos = relationship("LancamentoContabilV2", back_populates="documento_fiscal")
+    lancamentos = relationship("LancamentoCabecalho", back_populates="documento_fiscal")
 
 
 class ParcelaDocumentoFiscal(AuditableBase):
