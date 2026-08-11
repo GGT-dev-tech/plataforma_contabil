@@ -7,6 +7,7 @@ from app.contexts.fiscal_engine.strategies.base import TaxStrategy
 from app.contexts.fiscal_engine.strategies.mei_strategy import MeiStrategy
 from app.contexts.fiscal_engine.strategies.simples_nacional_strategy import SimplesNacionalStrategy
 from app.contexts.fiscal_engine.strategies.lucro_presumido_strategy import LucroPresumidoStrategy
+from app.contexts.fiscal_engine.strategies.lucro_real_strategy import LucroRealStrategy
 
 class TaxEngine:
     """
@@ -26,8 +27,9 @@ class TaxEngine:
             return SimplesNacionalStrategy(self.db, self.empresa)
         elif self.empresa.regime_tributario == RegimeTributario.LUCRO_PRESUMIDO:
             return LucroPresumidoStrategy(self.db, self.empresa)
+        elif self.empresa.regime_tributario == RegimeTributario.LUCRO_REAL:
+            return LucroRealStrategy(self.db, self.empresa)
         else:
-            # Fallback para Lucro Real que não tem estratégia no MVP
             raise ValueError(f"Regime {self.empresa.regime_tributario} não suportado no momento.")
             
     def executar_calculo_mensal(self, competencia: str, dados_faturamento: Dict[str, Any]) -> ApuracaoFiscal:
