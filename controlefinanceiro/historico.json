@@ -1,0 +1,328 @@
+{
+  "versao": "2.0",
+  "ultima_atualizacao": "2026-08-10T15:57:30.019166",
+  "meses": {
+    "2026-01": {
+      "periodo_label": "Janeiro / 2026",
+      "mes": 1,
+      "ano": 2026,
+      "saldo_inicial": 0.0,
+      "saldo_final": -5746.67,
+      "totais": {
+        "CSP": -45335.64,
+        "RECEITA_BRUTA": 79383.18,
+        "DESPESAS_INSTALACOES": -7187.36,
+        "DESPESAS_PESSOAL": -7081.15,
+        "DISTRIBUICAO_LUCROS": -3700.0,
+        "DEDUCOES_RECEITA": -6336.5,
+        "OUTRAS_RECEITAS": 9.85,
+        "DESPESAS_COMERCIAIS": -4234.67,
+        "DESPESAS_ADMINISTRATIVAS": -5535.0
+      },
+      "subtotais": {
+        "receita_liquida": 73046.68,
+        "lucro_bruto": 27711.04,
+        "resultado_operacional": 3672.86,
+        "resultado_antes_distribuicao": 3682.71,
+        "resultado_final": -17.29
+      },
+      "resultado_acumulado_ano": -17.29,
+      "qtd_efetivados": 84,
+      "qtd_em_aberto": 2,
+      "em_aberto_detalhes": [
+        {
+          "data": "05/01/2026",
+          "categoria": "Honorários Contábeis",
+          "valor": -1100.0,
+          "resumo": "Venda 753\nHonorários Contábeis\nTETRACONTA INTELIGENCIA TRIBUTARIA E CONTABIL LTDA"
+        },
+        {
+          "data": "30/01/2026",
+          "categoria": "Receitas de Serviços",
+          "valor": 6882.0,
+          "resumo": "Venda 72\nReceitas de Serviços\nTania Claribel de Moura"
+        }
+      ],
+      "nao_mapeados": [],
+      "arquivo_origem": "controlefiscalcedipi_012026.xlsx",
+      "arq_saida": "saida/2026/DRE_Balancete_012026.xlsx",
+      "gerado_em": "2026-08-10T15:57:29.596062"
+    },
+    "2026-02": {
+      "periodo_label": "Fevereiro / 2026",
+      "mes": 2,
+      "ano": 2026,
+      "saldo_inicial": -5746.67,
+      "saldo_final": 36520.71,
+      "totais": {
+        "DESPESAS_ADMINISTRATIVAS": -3664.42,
+        "RECEITA_BRUTA": 87858.65,
+        "DESPESAS_INSTALACOES": -15599.99,
+        "DESPESAS_PESSOAL": -7814.47,
+        "CSP": -14594.89,
+        "DESPESAS_COMERCIAIS": -1500.0,
+        "OUTRAS_RECEITAS": -334.78,
+        "DEDUCOES_RECEITA": -2082.72
+      },
+      "subtotais": {
+        "receita_liquida": 85775.93,
+        "lucro_bruto": 71181.04,
+        "resultado_operacional": 42602.16,
+        "resultado_antes_distribuicao": 42267.38,
+        "resultado_final": 42267.38
+      },
+      "resultado_acumulado_ano": 42250.09,
+      "qtd_efetivados": 74,
+      "qtd_em_aberto": 4,
+      "em_aberto_detalhes": [
+        {
+          "data": "05/02/2026",
+          "categoria": "Honorários Médicos",
+          "valor": -7520.0,
+          "resumo": "hon\nHonorários Médicos\nDr Deison Lenhardt Gularte"
+        },
+        {
+          "data": "15/02/2026",
+          "categoria": "google",
+          "valor": -4305.04,
+          "resumo": "Google ads\ngoogle\nGoogle ADS"
+        },
+        {
+          "data": "27/02/2026",
+          "categoria": "Receitas de Serviços",
+          "valor": 5894.0,
+          "resumo": "Venda 73\nReceitas de Serviços\nTania Claribel de Moura"
+        },
+        {
+          "data": "27/02/2026",
+          "categoria": "Receitas de Serviços",
+          "valor": 14260.0,
+          "resumo": "Venda 74\nReceitas de Serviços\nTania Claribel de Moura"
+        }
+      ],
+      "nao_mapeados": [],
+      "arquivo_origem": "controlefiscalcedipi_022026.xlsx",
+      "arq_saida": "saida/2026/DRE_Balancete_022026.xlsx",
+      "gerado_em": "2026-08-10T15:57:29.655660"
+    },
+    "2026-03": {
+      "periodo_label": "Marco / 2026",
+      "mes": 3,
+      "ano": 2026,
+      "saldo_inicial": 36520.71,
+      "saldo_final": -6237.85,
+      "totais": {
+        "CSP": -75450.09,
+        "DESPESAS_ADMINISTRATIVAS": -4216.51,
+        "DESPESAS_INSTALACOES": -9595.62,
+        "RECEITA_BRUTA": 78345.4,
+        "DESPESAS_PESSOAL": -14238.52,
+        "DISTRIBUICAO_LUCROS": -9292.9,
+        "DEDUCOES_RECEITA": -4060.32,
+        "DESPESAS_COMERCIAIS": -750.0
+      },
+      "subtotais": {
+        "receita_liquida": 74285.08,
+        "lucro_bruto": -1165.01,
+        "resultado_operacional": -29965.66,
+        "resultado_antes_distribuicao": -29965.66,
+        "resultado_final": -39258.56
+      },
+      "resultado_acumulado_ano": 2991.53,
+      "qtd_efetivados": 91,
+      "qtd_em_aberto": 3,
+      "em_aberto_detalhes": [
+        {
+          "data": "15/03/2026",
+          "categoria": "google",
+          "valor": -3222.49,
+          "resumo": "Google ads\ngoogle\nGoogle ADS"
+        },
+        {
+          "data": "31/03/2026",
+          "categoria": "Receitas de Serviços",
+          "valor": 6970.0,
+          "resumo": "Venda 75\nReceitas de Serviços\nTania Claribel de Moura"
+        },
+        {
+          "data": "31/03/2026",
+          "categoria": "Receitas de Serviços",
+          "valor": 18120.0,
+          "resumo": "Venda 76\nReceitas de Serviços\nTania Claribel de Moura"
+        }
+      ],
+      "nao_mapeados": [
+        "Despesas a identificar"
+      ],
+      "arquivo_origem": "controlefiscalcedipi_032026.xlsx",
+      "arq_saida": "saida/2026/DRE_Balancete_032026.xlsx",
+      "gerado_em": "2026-08-10T15:57:29.722460"
+    },
+    "2026-04": {
+      "periodo_label": "Abril / 2026",
+      "mes": 4,
+      "ano": 2026,
+      "saldo_inicial": -6237.85,
+      "saldo_final": 6740.87,
+      "totais": {
+        "DESPESAS_COMERCIAIS": -7753.58,
+        "CSP": -67697.48,
+        "RECEITA_BRUTA": 122964.26,
+        "DESPESAS_INSTALACOES": -10076.91,
+        "DESPESAS_PESSOAL": -6195.87,
+        "DESPESAS_ADMINISTRATIVAS": -18551.84,
+        "OUTRAS_RECEITAS": 9.77,
+        "DEDUCOES_RECEITA": -5719.63
+      },
+      "subtotais": {
+        "receita_liquida": 117244.63,
+        "lucro_bruto": 49547.15,
+        "resultado_operacional": 6968.95,
+        "resultado_antes_distribuicao": 6978.72,
+        "resultado_final": 6978.72
+      },
+      "resultado_acumulado_ano": 9970.25,
+      "qtd_efetivados": 93,
+      "qtd_em_aberto": 2,
+      "em_aberto_detalhes": [
+        {
+          "data": "17/04/2026",
+          "categoria": "Antecipação de Lucros",
+          "valor": -20000.0,
+          "resumo": "TRANSFERENCIA ENTRE CONTAS - IB ( DOC.: 666912 )\nAntecipação de Lucros"
+        },
+        {
+          "data": "20/04/2026",
+          "categoria": "google",
+          "valor": -3940.0,
+          "resumo": "TRANSFERENCIA ENTRE CONTAS - IB ( DOC.: 156272 )\ngoogle"
+        }
+      ],
+      "nao_mapeados": [
+        "transferencia entre contas"
+      ],
+      "arquivo_origem": "controlefiscalcedipi_042026.xlsx",
+      "arq_saida": "saida/2026/DRE_Balancete_042026.xlsx",
+      "gerado_em": "2026-08-10T15:57:29.826067"
+    },
+    "2026-05": {
+      "periodo_label": "Maio / 2026",
+      "mes": 5,
+      "ano": 2026,
+      "saldo_inicial": 6740.87,
+      "saldo_final": 22254.21,
+      "totais": {
+        "DESPESAS_PESSOAL": -16060.03,
+        "RECEITA_BRUTA": 126538.61,
+        "DESPESAS_ADMINISTRATIVAS": -5708.24,
+        "DESPESAS_INSTALACOES": -7706.48,
+        "DISTRIBUICAO_LUCROS": -10000.0,
+        "CSP": -64394.33,
+        "OUTRAS_RECEITAS": 36.89,
+        "DEDUCOES_RECEITA": -1271.42,
+        "DESPESAS_COMERCIAIS": -5921.66
+      },
+      "subtotais": {
+        "receita_liquida": 125267.19,
+        "lucro_bruto": 60872.86,
+        "resultado_operacional": 25476.45,
+        "resultado_antes_distribuicao": 25513.34,
+        "resultado_final": 15513.34
+      },
+      "resultado_acumulado_ano": 25483.59,
+      "qtd_efetivados": 88,
+      "qtd_em_aberto": 1,
+      "em_aberto_detalhes": [
+        {
+          "data": "05/05/2026",
+          "categoria": "Honorários Contábeis",
+          "valor": -1100.0,
+          "resumo": "Venda 960\nHonorários Contábeis\nTETRACONTA INTELIGENCIA TRIBUTARIA E CONTABIL LTDA"
+        }
+      ],
+      "nao_mapeados": [],
+      "arquivo_origem": "controlefiscalcedipi_052026.xlsx",
+      "arq_saida": "saida/2026/DRE_Balancete_052026.xlsx",
+      "gerado_em": "2026-08-10T15:57:29.892002"
+    },
+    "2026-06": {
+      "periodo_label": "Junho / 2026",
+      "mes": 6,
+      "ano": 2026,
+      "saldo_inicial": 22254.21,
+      "saldo_final": 7194.83,
+      "totais": {
+        "DESPESAS_INSTALACOES": -11124.16,
+        "DESPESAS_ADMINISTRATIVAS": -14520.92,
+        "CSP": -52686.88,
+        "DESPESAS_PESSOAL": -9524.99,
+        "RECEITA_BRUTA": 96800.86,
+        "DEDUCOES_RECEITA": -1322.7,
+        "DISTRIBUICAO_LUCROS": -17000.0,
+        "DESPESAS_COMERCIAIS": -5680.59
+      },
+      "subtotais": {
+        "receita_liquida": 95478.16,
+        "lucro_bruto": 42791.28,
+        "resultado_operacional": 1940.62,
+        "resultado_antes_distribuicao": 1940.62,
+        "resultado_final": -15059.38
+      },
+      "resultado_acumulado_ano": 10424.21,
+      "qtd_efetivados": 74,
+      "qtd_em_aberto": 1,
+      "em_aberto_detalhes": [
+        {
+          "data": "05/06/2026",
+          "categoria": "Honorários Contábeis",
+          "valor": -1100.0,
+          "resumo": "Venda 993\nHonorários Contábeis\nTETRACONTA INTELIGENCIA TRIBUTARIA E CONTABIL LTDA"
+        }
+      ],
+      "nao_mapeados": [],
+      "arquivo_origem": "controlefiscalcedipi_062026.xlsx",
+      "arq_saida": "saida/2026/DRE_Balancete_062026.xlsx",
+      "gerado_em": "2026-08-10T15:57:29.948191"
+    },
+    "2026-07": {
+      "periodo_label": "Julho / 2026",
+      "mes": 7,
+      "ano": 2026,
+      "saldo_inicial": 7194.83,
+      "saldo_final": -6288.03,
+      "totais": {
+        "DESPESAS_ADMINISTRATIVAS": -4107.0,
+        "DESPESAS_PESSOAL": -14192.66,
+        "DESPESAS_INSTALACOES": -11259.32,
+        "RECEITA_BRUTA": 111958.87,
+        "CSP": -65294.73,
+        "DEDUCOES_RECEITA": -12603.69,
+        "DESPESAS_COMERCIAIS": -7698.6,
+        "OUTRAS_RECEITAS": 10.0,
+        "DISTRIBUICAO_LUCROS": -10295.73
+      },
+      "subtotais": {
+        "receita_liquida": 99355.18,
+        "lucro_bruto": 34060.45,
+        "resultado_operacional": -3197.13,
+        "resultado_antes_distribuicao": -3187.13,
+        "resultado_final": -13482.86
+      },
+      "resultado_acumulado_ano": -3058.65,
+      "qtd_efetivados": 100,
+      "qtd_em_aberto": 1,
+      "em_aberto_detalhes": [
+        {
+          "data": "05/07/2026",
+          "categoria": "Honorários Contábeis",
+          "valor": -1100.0,
+          "resumo": "Venda 1036\nHonorários Contábeis\nTETRACONTA INTELIGENCIA TRIBUTARIA E CONTABIL LTDA"
+        }
+      ],
+      "nao_mapeados": [],
+      "arquivo_origem": "controlefiscalcedipi_072026.xlsx",
+      "arq_saida": "saida/2026/DRE_Balancete_072026.xlsx",
+      "gerado_em": "2026-08-10T15:57:30.019164"
+    }
+  }
+}

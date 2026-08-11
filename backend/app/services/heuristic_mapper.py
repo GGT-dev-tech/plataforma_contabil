@@ -14,9 +14,10 @@ class HeuristicMapper:
     # Dicionário estendido de sinônimos para o Fuzzy Matching
     CANONICAL_TARGETS = {
         "data": ["data de competência", "data", "emissao", "vencimento", "data pagamento"],
-        "valor": ["valor total", "valor", "montante", "quantia", "total"],
-        "descricao": ["historico", "descrição", "detalhes", "observação", "nome", "projeto"],
-        "fornecedor": ["fornecedor", "cliente", "empresa", "favorecido", "razao social"]
+        "valor": ["valor total", "valor", "montante", "quantia", "total", "saida", "entrada", "r$"],
+        "descricao": ["historico", "descrição", "detalhes", "observação", "nome", "projeto", "documento", "id"],
+        "fornecedor": ["fornecedor", "cliente", "empresa", "favorecido", "razao social", "nome fantasia"],
+        "categoria": ["categoria", "tipo", "grupo", "plano de contas", "classificação", "despesa", "receita", "natureza"]
     }
     
     @staticmethod

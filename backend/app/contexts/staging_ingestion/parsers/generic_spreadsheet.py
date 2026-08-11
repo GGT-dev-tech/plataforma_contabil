@@ -59,6 +59,7 @@ class GenericSpreadsheetAdapter(ImportAdapter):
             valor_raw = row.get(canonical_to_raw.get('valor', '')) if 'valor' in canonical_to_raw else None
             descricao_raw = row.get(canonical_to_raw.get('descricao', '')) if 'descricao' in canonical_to_raw else ""
             fornecedor_raw = row.get(canonical_to_raw.get('fornecedor', '')) if 'fornecedor' in canonical_to_raw else ""
+            categoria_raw = row.get(canonical_to_raw.get('categoria', '')) if 'categoria' in canonical_to_raw else ""
             
             # Formatação Básica (pula linhas vazias)
             if pd.isna(valor_raw) or not valor_raw: continue
@@ -76,6 +77,7 @@ class GenericSpreadsheetAdapter(ImportAdapter):
                 valor=valor_float,
                 descricao=str(descricao_raw),
                 entidade_nome=str(fornecedor_raw),
+                categoria=str(categoria_raw) if categoria_raw else None,
                 processado=False,
                 empresa_id=execucao.empresa_id if execucao else None
             )

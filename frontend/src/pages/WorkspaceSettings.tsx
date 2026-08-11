@@ -1,53 +1,70 @@
 import React, { useState, useEffect } from 'react';
 import { useWorkspace } from '../contexts/WorkspaceContext';
 import { apiClient as api } from '../services/api';
-import { Save, FileSpreadsheet, Settings } from 'lucide-react';
+import { Save, Building2, Plug, Plus } from 'lucide-react';
 import { Button } from '../components/ui/Button';
+import { TemplateMapping } from './TemplateMapping';
 
 export const WorkspaceSettings: React.FC = () => {
-  const { activeWorkspace, activeWorkspaceId } = useWorkspace();
+  const { activeWorkspace, activeWorkspaceId, workspaces } = useWorkspace();
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+  const [activeTab, setActiveTab] = useState<'geral' | 'integracoes' | 'ingestao'>('geral');
 
-  const [despesaConfig, setDespesaConfig] = useState({
-    col_data: 'Data Vencimento',
-    col_valor: 'Valor Parcela',
-    col_descricao: 'ID',
-    col_entidade: 'Fornecedor',
-    skip_rows: 0,
+  // Estado para Criar Nova Empresa
+  const [newCompany, setNewCompany] = useState({ cnpj: '', razao_social: '', nome_fantasia: '' });
+  const [isCreating, setIsCreating] = useState(false);
+
+  // Estado para Integrações ERP
+  const [erpConfig, setErpConfig] = useState({
+    provedor: 'nenhum', // 'sienge', 'contaazul', 'omie'
+    api_key: '',
+    tenant_id: ''
   });
 
   useEffect(() => {
-    if (activeWorkspace?.import_config?.DESPESA) {
-      setDespesaConfig(activeWorkspace.import_config.DESPESA);
+    if (activeWorkspace?.import_config) {
+      if (activeWorkspace.import_config.ERP) {
+        setErpConfig(activeWorkspace.import_config.ERP);
+      }
     }
   }, [activeWorkspace]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type } = e.target;
-    setDespesaConfig(prev => ({
-      ...prev,
-      [name]: type === 'number' ? parseInt(value) || 0 : value
-    }));
+
+
+  const handleErpChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setErpConfig(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSave = async () => {
+  const handleCreateCompany = async () => {
+    setLoading(true);
+    setMessage(null);
+    try {
+      await api.post(`/workspaces/empresas`, newCompany);
+      setMessage({ type: 'success', text: 'Empresa cadastrada com sucesso!' });
+      setIsCreating(false);
+      setNewCompany({ cnpj: '', razao_social: '', nome_fantasia: '' });
+      setTimeout(() => window.location.reload(), 1500);
+    } catch (err: any) {
+      console.error(err);
+      setMessage({ type: 'error', text: err.response?.data?.detail || 'Erro ao cadastrar empresa.' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSaveConfigs = async () => {
     if (!activeWorkspaceId) return;
-    
     setLoading(true);
     setMessage(null);
     try {
       const payload = {
         ...(activeWorkspace?.import_config || {}),
-        DESPESA: despesaConfig
+        ERP: erpConfig
       };
-      
       await api.put(`/workspaces/empresas/${activeWorkspaceId}/import-config`, payload);
-      
-      // Update local context manually or reload (we'll just show success here)
-      setMessage({ type: 'success', text: 'Configurações de importação atualizadas com sucesso!' });
-      
-      // We could ideally trigger a context refresh here, but reloading window works for now
+      setMessage({ type: 'success', text: 'Configurações atualizadas com sucesso!' });
       setTimeout(() => window.location.reload(), 1500);
     } catch (err) {
       console.error(err);
@@ -57,113 +74,158 @@ export const WorkspaceSettings: React.FC = () => {
     }
   };
 
-  if (!activeWorkspaceId) {
-    return <div className="p-8">Selecione uma empresa para configurar.</div>;
-  }
-
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between mb-8">
+    <div className="space-y-6 max-w-5xl mx-auto">
+      <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent mb-2">
-            Configurações do Workspace
+          <h1 className="text-3xl font-bold text-slate-800 mb-2">
+            Gestão da Contabilidade
           </h1>
-          <p className="text-gray-400">
-            Configure as regras de negócio e de importação para a empresa: <strong className="text-primary-400">{activeWorkspace?.nome_fantasia}</strong>
+          <p className="text-slate-500">
+            Administre seus clientes (empresas), parametrize conectores ERP e ajuste templates de planilhas.
           </p>
         </div>
-        <div className="w-12 h-12 rounded-xl bg-primary-500/10 border border-primary-500/20 flex items-center justify-center">
-          <Settings className="w-6 h-6 text-primary-400" />
-        </div>
       </div>
 
-      <div className="glass-panel p-8 rounded-2xl border border-white/5 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-primary-500/5 rounded-full filter blur-[80px] -z-10 pointer-events-none"></div>
-        
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center border border-green-500/20">
-            <FileSpreadsheet className="w-5 h-5 text-green-400" />
-          </div>
-          <h2 className="text-xl font-semibold text-white">Importação de Despesas (Excel/CSV)</h2>
-        </div>
-        
-        <p className="text-gray-400 mb-6 text-sm">
-          Mapeie exatamente o nome das colunas que vêm na planilha do seu cliente para que o sistema consiga extrair os dados sem falhas.
-        </p>
+      <div className="flex space-x-1 bg-slate-100 p-1 rounded-lg w-fit">
+        <button
+          onClick={() => setActiveTab('geral')}
+          className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${activeTab === 'geral' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'}`}
+        >
+          Meus Clientes
+        </button>
+        <button
+          onClick={() => setActiveTab('integracoes')}
+          disabled={!activeWorkspaceId}
+          className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${activeTab === 'integracoes' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'} disabled:opacity-50 disabled:cursor-not-allowed`}
+        >
+          Integrações (ERP)
+        </button>
+        <button
+          onClick={() => setActiveTab('ingestao')}
+          disabled={!activeWorkspaceId}
+          className={`px-4 py-2 text-sm font-medium rounded-md transition-all ${activeTab === 'ingestao' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'} disabled:opacity-50 disabled:cursor-not-allowed`}
+        >
+          Templates de Planilha
+        </button>
+      </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-300">Coluna de Data de Vencimento *</label>
-            <input 
-              type="text" 
-              name="col_data"
-              value={despesaConfig.col_data}
-              onChange={handleChange}
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-primary-500/50 transition-all"
-              placeholder="Ex: Vencimento Parcela"
-            />
+      {message && (
+        <div className={`p-4 rounded-lg text-sm border ${message.type === 'success' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'}`}>
+          {message.text}
+        </div>
+      )}
+
+      {/* TAB GERAL: Lista de Clientes e Cadastro */}
+      {activeTab === 'geral' && (
+        <div className="space-y-6">
+          <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-lg font-semibold text-slate-800 flex items-center gap-2">
+                <Building2 className="w-5 h-5 text-primary-600" />
+                Empresas Atendidas
+              </h2>
+              <Button onClick={() => setIsCreating(!isCreating)} variant="default" size="sm" leftIcon={<Plus className="w-4 h-4" />}>
+                Novo Cliente
+              </Button>
+            </div>
+
+            {isCreating && (
+              <div className="mb-8 p-6 bg-slate-50 border border-slate-200 rounded-lg">
+                <h3 className="text-md font-medium text-slate-800 mb-4">Cadastrar Nova Empresa</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">CNPJ</label>
+                    <input type="text" value={newCompany.cnpj} onChange={e => setNewCompany({...newCompany, cnpj: e.target.value})} className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-900 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500" placeholder="00.000.000/0000-00" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Razão Social</label>
+                    <input type="text" value={newCompany.razao_social} onChange={e => setNewCompany({...newCompany, razao_social: e.target.value})} className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-900 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500" placeholder="Empresa Ltda" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Nome Fantasia</label>
+                    <input type="text" value={newCompany.nome_fantasia} onChange={e => setNewCompany({...newCompany, nome_fantasia: e.target.value})} className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-900 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500" placeholder="Empresa" />
+                  </div>
+                </div>
+                <div className="flex justify-end gap-3">
+                  <Button variant="outline" size="sm" onClick={() => setIsCreating(false)}>Cancelar</Button>
+                  <Button variant="default" size="sm" onClick={handleCreateCompany} disabled={loading}>{loading ? 'Salvando...' : 'Salvar Empresa'}</Button>
+                </div>
+              </div>
+            )}
+
+            <div className="divide-y divide-slate-100 border border-slate-200 rounded-lg overflow-hidden">
+              {workspaces.map(ws => (
+                <div key={ws.id} className={`p-4 flex items-center justify-between ${ws.id === activeWorkspaceId ? 'bg-primary-50' : 'bg-white hover:bg-slate-50'}`}>
+                  <div>
+                    <p className="font-medium text-slate-900">{ws.nome_fantasia || ws.razao_social}</p>
+                    <p className="text-sm text-slate-500">CNPJ: {ws.cnpj || 'Não informado'}</p>
+                  </div>
+                  {ws.id === activeWorkspaceId && (
+                    <span className="px-2.5 py-1 text-xs font-medium bg-primary-100 text-primary-700 rounded-full border border-primary-200">
+                      Selecionada
+                    </span>
+                  )}
+                </div>
+              ))}
+              {workspaces.length === 0 && (
+                <div className="p-8 text-center text-slate-500">Nenhum cliente cadastrado.</div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB INTEGRACOES */}
+      {activeTab === 'integracoes' && (
+        <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm animate-fade-in">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 rounded-lg bg-indigo-50 flex items-center justify-center border border-indigo-100">
+              <Plug className="w-5 h-5 text-indigo-600" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-slate-800">Conectores ERP</h2>
+              <p className="text-sm text-slate-500">Configure a sincronização com o software do cliente.</p>
+            </div>
           </div>
           
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-300">Coluna de Valor *</label>
-            <input 
-              type="text" 
-              name="col_valor"
-              value={despesaConfig.col_valor}
-              onChange={handleChange}
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-primary-500/50 transition-all"
-              placeholder="Ex: Valor Parcela"
-            />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-700">Sistema ERP</label>
+              <select name="provedor" value={erpConfig.provedor} onChange={handleErpChange} className="w-full bg-white border border-slate-300 rounded-lg px-4 py-2.5 text-slate-900 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500">
+                <option value="nenhum">Nenhum (Upload Manual de Arquivos)</option>
+                <option value="sienge">Sienge Plataforma</option>
+                <option value="contaazul">ContaAzul</option>
+                <option value="omie">Omie ERP</option>
+              </select>
+            </div>
+            
+            {erpConfig.provedor !== 'nenhum' && (
+              <>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700">Tenant ID / Subdomínio</label>
+                  <input type="text" name="tenant_id" value={erpConfig.tenant_id} onChange={handleErpChange} className="w-full bg-white border border-slate-300 rounded-lg px-4 py-2.5 text-slate-900 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500" placeholder="ex: construtorax" />
+                </div>
+                <div className="space-y-2 md:col-span-2">
+                  <label className="text-sm font-medium text-slate-700">API Key / Token de Acesso</label>
+                  <input type="password" name="api_key" value={erpConfig.api_key} onChange={handleErpChange} className="w-full bg-white border border-slate-300 rounded-lg px-4 py-2.5 text-slate-900 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500" placeholder="••••••••••••••••••••" />
+                </div>
+              </>
+            )}
           </div>
 
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-300">Coluna de Descrição / N° Documento</label>
-            <input 
-              type="text" 
-              name="col_descricao"
-              value={despesaConfig.col_descricao}
-              onChange={handleChange}
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-primary-500/50 transition-all"
-              placeholder="Ex: ID Parcela"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-300">Coluna de Fornecedor / Entidade</label>
-            <input 
-              type="text" 
-              name="col_entidade"
-              value={despesaConfig.col_entidade}
-              onChange={handleChange}
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-primary-500/50 transition-all"
-              placeholder="Ex: Nome do Fornecedor"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-300">Linhas a ignorar no cabeçalho (Skip Rows)</label>
-            <input 
-              type="number" 
-              name="skip_rows"
-              value={despesaConfig.skip_rows}
-              onChange={handleChange}
-              className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-primary-500/50 transition-all"
-            />
+          <div className="flex justify-end pt-4 border-t border-slate-100">
+            <Button onClick={handleSaveConfigs} disabled={loading} leftIcon={<Save className="w-4 h-4" />}>
+              {loading ? 'Salvando...' : 'Salvar Conexão'}
+            </Button>
           </div>
         </div>
-        
-        {message && (
-          <div className={`mt-6 p-4 rounded-xl text-sm ${message.type === 'success' ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
-            {message.text}
-          </div>
-        )}
+      )}
 
-        <div className="mt-8 flex justify-end">
-          <Button onClick={handleSave} disabled={loading} variant="default" leftIcon={<Save className="w-4 h-4" />}>
-            {loading ? 'Salvando...' : 'Salvar Configurações'}
-          </Button>
-        </div>
-      </div>
+      {/* TAB INGESTAO */}
+      {activeTab === 'ingestao' && (
+        <TemplateMapping />
+      )}
     </div>
   );
 };

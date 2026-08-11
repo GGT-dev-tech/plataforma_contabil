@@ -188,7 +188,7 @@ class ParcelaDocumentoFiscal(AuditableBase):
     forma_pagamento = Column(String(30), nullable=True)  # PIX, BOLETO, TED, DINHEIRO
 
     # Vinculação com movimentação bancária (resultado da conciliação)
-    movimentacao_financeira_id = Column(UUID(as_uuid=True), ForeignKey('movimentacoes_financeiras.id'), nullable=True)
+    movimentacao_financeira_id = Column(String(36), ForeignKey('movimentacoes_financeiras.id'), nullable=True)
 
     # ID de origem no ERP (para idempotência)
     id_externo_erp = Column(String(100), nullable=True, index=True)

@@ -1,12 +1,15 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.orm import Session
 from typing import List, Dict, Any, Optional
 from pydantic import BaseModel, UUID4
+from uuid import UUID
 import uuid
 
 from app.api.deps import get_db
+from app.api.auth.dependencies import get_current_user
 from app.contexts.identity.auth_utils import get_current_user
 from app.models.domain import Empresa, Usuario, ClientSchemaMapping, Role, WorkspaceMember
+from app.contexts.staging_ingestion.parsers.dynamic_parser import DynamicTemplateParser
 
 router = APIRouter(prefix="/workspaces", tags=["Workspaces"])
 
@@ -171,3 +174,25 @@ def atualizar_mapeamento(
         
     db.commit()
     return {"status": "Mapeamento salvo na memória do tenant."}
+
+@router.post("/{empresa_id}/extract-headers")
+def extrair_cabecalho(
+    empresa_id: UUID,
+    file: UploadFile = File(...),
+    skip_rows: int = 0,
+    current_user: Usuario = Depends(get_current_user)
+):
+    """
+    Lê uma planilha e retorna a lista de colunas (cabeçalho) e a assinatura gerada.
+    Útil para a tela de Mapeamento Visual.
+    """
+    parser = DynamicTemplateParser(db_session=None, empresa_id=str(empresa_id))
+    signature, headers = parser.extract_headers(file.file, skip_rows=skip_rows)
+    
+    if not signature:
+        raise HTTPException(status_code=400, detail="Não foi possível extrair cabeçalho do arquivo.")
+        
+    return {
+        "signature": signature,
+        "headers": headers
+    }

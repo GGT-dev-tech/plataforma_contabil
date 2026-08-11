@@ -177,7 +177,7 @@ class ConciliacaoItem(AuditableBase):
     # Entidades vinculadas (todas opcionais, pois depende do lado do match)
     titulo_id = Column(String(36), ForeignKey("titulos_financeiros.id"), nullable=True)
     movimentacao_financeira_id = Column(String(36), ForeignKey("movimentacoes_financeiras.id"), nullable=True)
-    lancamento_cabecalho_id = Column(String(36), ForeignKey("lancamentos_cabecalhos.id"), nullable=True)
+    lancamento_cabecalho_id = Column(UUID(as_uuid=True), ForeignKey("lancamentos_cabecalhos.id"), nullable=True)
 
     # Relacionamentos
     conciliacao = relationship("Conciliacao", back_populates="itens")
@@ -213,7 +213,7 @@ class CandidateEvaluationLog(AuditableBase):
     execucao_id = Column(String(36), ForeignKey("execucoes_pipeline.id"), nullable=False)
     movimentacao_financeira_id = Column(String(36), ForeignKey('movimentacoes_financeiras.id'), nullable=False)
     titulo_id = Column(String(36), ForeignKey('titulos_financeiros.id'), nullable=True)
-    lancamento_cabecalho_id = Column(String(36), ForeignKey('lancamentos_cabecalhos.id'), nullable=True)
+    lancamento_cabecalho_id = Column(UUID(as_uuid=True), ForeignKey('lancamentos_cabecalhos.id'), nullable=True)
     regra = Column(String(100), nullable=False)
     motivo_descarte = Column(Text, nullable=False)
     
@@ -224,7 +224,7 @@ class MatchCandidate(AuditableBase):
     execucao_id = Column(String(36), ForeignKey("execucoes_pipeline.id"), nullable=False)
     movimentacao_financeira_id = Column(String(36), ForeignKey('movimentacoes_financeiras.id'), nullable=False)
     titulo_id = Column(String(36), ForeignKey('titulos_financeiros.id'), nullable=True)
-    lancamento_cabecalho_id = Column(String(36), ForeignKey('lancamentos_cabecalhos.id'), nullable=True)
+    lancamento_cabecalho_id = Column(UUID(as_uuid=True), ForeignKey('lancamentos_cabecalhos.id'), nullable=True)
     
     score_total = Column(Float, nullable=False)
     status = Column(Enum(StatusCandidato), nullable=False)

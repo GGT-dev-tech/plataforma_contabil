@@ -176,14 +176,29 @@ def dre_gerencial(
         
     titulos = query.all()
     
-    receitas = sum(t.valor_pago for t in titulos if t.tipo == TipoTitulo.RECEBER)
-    despesas = sum(t.valor_pago for t in titulos if t.tipo == TipoTitulo.PAGAR)
+    receitas_por_categoria = {}
+    despesas_por_categoria = {}
     
+    total_receitas = 0.0
+    total_despesas = 0.0
+    
+    for t in titulos:
+        cat = t.categoria or "Sem Categoria"
+        valor = t.valor_pago or 0.0
+        if t.tipo == TipoTitulo.RECEBER:
+            receitas_por_categoria[cat] = receitas_por_categoria.get(cat, 0.0) + valor
+            total_receitas += valor
+        else:
+            despesas_por_categoria[cat] = despesas_por_categoria.get(cat, 0.0) + valor
+            total_despesas += valor
+            
     return {
         "regime": "CAIXA",
         "periodo": f"{mes:02d}/{ano}" if mes else "Geral",
-        "receitas_operacionais": float(receitas),
-        "despesas_operacionais": float(despesas),
-        "resultado_liquido_caixa": float(receitas - despesas),
-        "total_movimentos": len(titulos)
+        "receitas_operacionais": float(total_receitas),
+        "despesas_operacionais": float(total_despesas),
+        "resultado_liquido_caixa": float(total_receitas - total_despesas),
+        "total_movimentos": len(titulos),
+        "receitas_por_categoria": receitas_por_categoria,
+        "despesas_por_categoria": despesas_por_categoria
     }

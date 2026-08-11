@@ -78,7 +78,8 @@ class StagingService:
             valor_nominal=float(item.valor),
             data_emissao=item.data,
             data_vencimento=item.data,
-            gerado_automaticamente=True
+            gerado_automaticamente=True,
+            categoria=item.categoria
         )
         self.db.add(titulo)
         taxes = self.tax_engine.process_operation("DESPESA", item.valor)
@@ -93,7 +94,8 @@ class StagingService:
             data_transacao=item.data, 
             descricao_extrato=item.descricao,
             valor=float(item.valor), 
-            conciliada=False
+            conciliada=False,
+            categoria=item.categoria
         )
         self.db.add(mov)
 

@@ -63,6 +63,19 @@ def get_staging_records(exec_id: str, db: Session = Depends(get_db), current_use
         records = uow.session.query(StagingRegistro).filter(StagingRegistro.execucao_id == exec_id).order_by(StagingRegistro.data.asc()).all()
         return records
 
+@router.get("/executions/{exec_id}/staging/categories")
+def get_unique_categories(exec_id: str, db: Session = Depends(get_db), current_user: Usuario = Depends(get_current_user)):
+    with SQLAlchemyUnitOfWork(db) as uow:
+        # Pega todas as categorias únicas que vieram da planilha e estão no staging
+        categories = uow.session.query(StagingRegistro.categoria).filter(
+            StagingRegistro.execucao_id == exec_id,
+            StagingRegistro.categoria.isnot(None)
+        ).distinct().all()
+        
+        # categories é uma lista de tuplas [(cat1,), (cat2,)]
+        unique_cats = [c[0] for c in categories if c[0] and str(c[0]).strip()]
+        return {"categories": unique_cats}
+
 @router.put("/executions/{exec_id}/staging/{item_id}")
 def update_staging_record(exec_id: str, item_id: str, data: schemas.StagingUpdateSchema, db: Session = Depends(get_db), current_user: Usuario = Depends(get_current_user)):
     with SQLAlchemyUnitOfWork(db) as uow:

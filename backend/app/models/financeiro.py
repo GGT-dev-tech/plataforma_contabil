@@ -25,7 +25,7 @@ class TituloFinanceiro(AuditableBase):
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     empresa_id = Column(UUID(as_uuid=True), ForeignKey('empresas.id'), index=True, nullable=False)
     obra_id = Column(UUID(as_uuid=True), ForeignKey('obras.id'), index=True, nullable=True)
-    documento_fiscal_id = Column(String(36), ForeignKey('documentos_fiscais_v2.id'), nullable=True)
+    documento_fiscal_id = Column(UUID(as_uuid=True), ForeignKey('documentos_fiscais_v2.id'), nullable=True)
     
     tipo = Column(Enum(TipoTitulo), nullable=False)
     status = Column(Enum(StatusTitulo), default=StatusTitulo.ABERTO, nullable=False)
@@ -43,6 +43,8 @@ class TituloFinanceiro(AuditableBase):
     
     # Campo para automação: Se o título foi gerado automaticamente pela plataforma a partir de uma NF
     gerado_automaticamente = Column(Boolean, default=False)
+    
+    categoria = Column(String(100), nullable=True)
     
 class TipoMovimentacao(str, enum.Enum):
     ENTRADA = "ENTRADA"
@@ -65,6 +67,8 @@ class MovimentacaoFinanceira(AuditableBase):
     
     # Se true, essa movimentação já foi 100% amarrada a um título
     conciliada = Column(Boolean, default=False)
+    
+    categoria = Column(String(100), nullable=True)
     
 class ConciliacaoFinanceira(AuditableBase):
     """

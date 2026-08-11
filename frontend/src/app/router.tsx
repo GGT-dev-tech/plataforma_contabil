@@ -6,7 +6,6 @@ import { LoginPage } from '../pages/auth/LoginPage';
 import { NewExecution } from '../pages/NewExecution';
 import { ExecutionsList } from '../pages/ExecutionsList';
 import { ExecutionView } from '../pages/ExecutionView';
-import { Showcase } from '../pages/Showcase';
 import { AppShell } from '../components/layout/AppShell';
 
 import { StagingGrid } from '../pages/StagingGrid';
@@ -31,7 +30,6 @@ export const AppRouter: React.FC = () => {
           <Route path="/unauthorized" element={<div className="p-12 text-center text-xl">Acesso Negado</div>} />
           
           <Route element={<AppShell />}>
-            <Route path="/ui" element={<Showcase />} />
             
             <Route element={<ProtectedRoute />}>
               <Route path="/executions" element={<ExecutionsList />} />

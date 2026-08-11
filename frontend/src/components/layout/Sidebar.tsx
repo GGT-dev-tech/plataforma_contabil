@@ -77,10 +77,6 @@ export const Sidebar: React.FC = () => {
           <Settings className="w-4 h-4 mr-3" />
           Configurações
         </NavLink>
-        <NavLink to="/ui" className={navItemClass}>
-          <Sparkles className="w-4 h-4 mr-3 text-accent-500" />
-          Componentes UI
-        </NavLink>
       </div>
     </aside>
   );
