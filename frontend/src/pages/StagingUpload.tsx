@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { apiClient as api } from '../services/api';
 import { useNavigate } from 'react-router-dom';
 import { useWorkspace } from '../contexts/WorkspaceContext';
-import { PageHeader } from '../components/layout/PageHeader';
 import { Breadcrumb } from '../components/layout/Breadcrumb';
 import { FileUp, FileSpreadsheet, FileText, FileCode, AlertCircle, CheckCircle2 } from 'lucide-react';
 

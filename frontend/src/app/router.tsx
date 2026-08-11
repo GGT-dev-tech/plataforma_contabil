@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ProtectedRoute } from '../components/layout/ProtectedRoute';
 
 import { LoginPage } from '../pages/auth/LoginPage';
-import { NewExecution } from '../pages/StagingUpload';
+import { StagingUpload } from '../pages/StagingUpload';
 import { ExecutionsList } from '../pages/ExecutionsList';
 import { ExecutionView } from '../pages/ExecutionView';
 import { AppShell } from '../components/layout/AppShell';
