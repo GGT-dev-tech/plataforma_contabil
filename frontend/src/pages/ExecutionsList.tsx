@@ -7,7 +7,7 @@ import { StatusBadge } from '../components/ui/StatusBadge';
 import { PageHeader } from '../components/layout/PageHeader';
 import { Loading } from '../components/ui/Loading';
 import { EmptyState } from '../components/ui/EmptyState';
-import { Plus, ListX, Sparkles } from 'lucide-react';
+import { Plus, ListX } from 'lucide-react';
 
 export const ExecutionsList: React.FC = () => {
   const navigate = useNavigate();

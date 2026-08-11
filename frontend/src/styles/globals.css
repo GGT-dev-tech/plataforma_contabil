@@ -28,7 +28,7 @@
 
 @layer base {
   body {
-    @apply bg-slate-50 text-slate-900 transition-colors duration-300 font-sans antialiased overflow-hidden selection:bg-primary-500/30 selection:text-primary-900;
+    @apply bg-slate-50 text-slate-900 transition-colors duration-300 font-sans antialiased overflow-hidden selection:bg-primary-500/30 selection:text-slate-900;
   }
 }
 
