@@ -2,7 +2,7 @@ import uuid
 from typing import List
 from sqlalchemy.orm import Session
 from datetime import datetime
-from app.models.financeiro import TituloFinanceiro, TipoTitulo
+from app.models.financeiro import TituloFinanceiro, TipoTitulo, MovimentacaoFinanceira, TipoMovimentacao
 from app.models.ledger import LancamentoCabecalho, PartidaItem, ModuloOrigem, TipoPartida, StatusLancamento
 from app.models.plano_contas import PlanoDeContas, GrupoConta, ClassificacaoDRE, NaturezaConta
 
@@ -247,14 +247,124 @@ class AccountingEngine:
 
         return cabecalho
 
+    def translate_movimentacao_to_lancamento(self, mov: MovimentacaoFinanceira) -> LancamentoCabecalho:
+        if not mov.valor or not mov.data_transacao:
+            return None
+
+        val = abs(float(mov.valor))
+        if val == 0:
+            return None
+
+        cabecalho = LancamentoCabecalho(
+            id=self._to_uuid(uuid.uuid4()),
+            empresa_id=self._to_uuid(self.empresa_id),
+            data_competencia=mov.data_transacao,
+            historico_padrao=f"Movimentação Bancária: {mov.descricao_extrato or ''}",
+            numero_lote=f"EXT-{mov.data_transacao.strftime('%Y%m')}",
+            modulo_origem=ModuloOrigem.FINANCEIRO,
+            status=StatusLancamento.CONFIRMADO
+        )
+        self.db.add(cabecalho)
+
+        tipo_str = str(mov.tipo.value if hasattr(mov.tipo, 'value') else mov.tipo)
+
+        # ENTRADA / CRÉDITO = Receita Bruta
+        if tipo_str in ["ENTRADA", "CREDITO"] or float(mov.valor) > 0:
+            conta_debito_id = self._get_or_create_conta(
+                codigo="1.1.1.01",
+                descricao="Caixa / Bancos Conta Movimento",
+                grupo=GrupoConta.ATIVO,
+                natureza=NaturezaConta.DEVEDORA
+            )
+            
+            cat_name = mov.categoria or "Receita de Vendas e Serviços"
+            classificacao = MAPA_DRE.get(mov.categoria, ClassificacaoDRE.RECEITA_BRUTA)
+            conta_credito_id = self._get_or_create_conta(
+                codigo=f"3.1.1.{cat_name[:3].upper()}",
+                descricao=f"Receita com {cat_name}",
+                grupo=GrupoConta.RESULTADO,
+                natureza=NaturezaConta.CREDORA,
+                classificacao_dre=classificacao
+            )
+            
+            partida_deb = PartidaItem(
+                id=self._to_uuid(uuid.uuid4()),
+                empresa_id=self._to_uuid(self.empresa_id),
+                cabecalho_id=cabecalho.id,
+                conta_contabil_id=conta_debito_id,
+                natureza=TipoPartida.DEBITO,
+                valor=val,
+                historico_complementar=mov.descricao_extrato
+            )
+            
+            partida_cred = PartidaItem(
+                id=self._to_uuid(uuid.uuid4()),
+                empresa_id=self._to_uuid(self.empresa_id),
+                cabecalho_id=cabecalho.id,
+                conta_contabil_id=conta_credito_id,
+                natureza=TipoPartida.CREDITO,
+                valor=val,
+                historico_complementar=f"Crédito Bancário: {mov.descricao_extrato or ''}"
+            )
+            self.db.add(partida_deb)
+            self.db.add(partida_cred)
+
+        # SAÍDA / DÉBITO sem título ERP conciliado = Despesa / Custo Direto
+        else:
+            cat_name = mov.categoria or "Despesas Diversas"
+            classificacao = MAPA_DRE.get(mov.categoria, ClassificacaoDRE.DESPESAS_ADMINISTRATIVAS)
+            conta_debito_id = self._get_or_create_conta(
+                codigo=f"3.1.1.{cat_name[:3].upper()}",
+                descricao=f"Despesa com {cat_name}",
+                grupo=GrupoConta.RESULTADO,
+                natureza=NaturezaConta.DEVEDORA,
+                classificacao_dre=classificacao
+            )
+            
+            conta_credito_id = self._get_or_create_conta(
+                codigo="1.1.1.01",
+                descricao="Caixa / Bancos Conta Movimento",
+                grupo=GrupoConta.ATIVO,
+                natureza=NaturezaConta.DEVEDORA
+            )
+            
+            partida_deb = PartidaItem(
+                id=self._to_uuid(uuid.uuid4()),
+                empresa_id=self._to_uuid(self.empresa_id),
+                cabecalho_id=cabecalho.id,
+                conta_contabil_id=conta_debito_id,
+                natureza=TipoPartida.DEBITO,
+                valor=val,
+                historico_complementar=mov.descricao_extrato
+            )
+            
+            partida_cred = PartidaItem(
+                id=self._to_uuid(uuid.uuid4()),
+                empresa_id=self._to_uuid(self.empresa_id),
+                cabecalho_id=cabecalho.id,
+                conta_contabil_id=conta_credito_id,
+                natureza=TipoPartida.CREDITO,
+                valor=val,
+                historico_complementar=f"Débito Bancário: {mov.descricao_extrato or ''}"
+            )
+            self.db.add(partida_deb)
+            self.db.add(partida_cred)
+
+        return cabecalho
+
     def process_all_liquidated(self) -> int:
-        from app.models.financeiro import StatusTitulo
+        from app.models.financeiro import StatusTitulo, MovimentacaoFinanceira
+        from app.models.domain import ConciliacaoItem
+        emp_uuid = self._to_uuid(self.empresa_id)
+
+        count = 0
+
+        # 1. Processar Títulos Liquidados (Pagar e Receber do ERP)
         titulos = self.db.query(TituloFinanceiro).filter(
-            TituloFinanceiro.empresa_id == self._to_uuid(self.empresa_id),
+            TituloFinanceiro.empresa_id == emp_uuid,
             TituloFinanceiro.status == StatusTitulo.LIQUIDADO
         ).all()
 
-        count = 0
         for t in titulos:
             try:
                 self.translate_titulo_to_lancamento(t)
@@ -262,7 +372,24 @@ class AccountingEngine:
                 count += 1
             except Exception as e:
                 self.db.rollback()
-                import logging
-                logging.getLogger(__name__).warning(f"Erro ao contabilizar titulo {t.id}: {e}")
+
+        # 2. Processar Movimentações Bancárias do Extrato Inter & Razão SCI
+        movs = self.db.query(MovimentacaoFinanceira).filter(
+            MovimentacaoFinanceira.empresa_id == emp_uuid
+        ).all()
+
+        conciliados_mov = self.db.query(ConciliacaoItem.movimentacao_financeira_id).all()
+        conciliados_mov_ids = {c[0] for c in conciliados_mov if c[0]}
+
+        for m in movs:
+            if m.id in conciliados_mov_ids:
+                continue
+            try:
+                res = self.translate_movimentacao_to_lancamento(m)
+                if res:
+                    self.db.commit()
+                    count += 1
+            except Exception as e:
+                self.db.rollback()
 
         return count

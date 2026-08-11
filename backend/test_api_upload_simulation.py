@@ -44,6 +44,7 @@ if not user:
     db.commit()
 else:
     user.empresa_id = empresa.id
+    user.role = Role.ADMIN
     db.commit()
 
 def override_get_current_user():
