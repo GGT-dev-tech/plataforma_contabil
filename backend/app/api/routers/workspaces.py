@@ -6,7 +6,7 @@ import uuid
 
 from app.api.deps import get_db
 from app.contexts.identity.auth_utils import get_current_user
-from app.models.domain import Empresa, Usuario, ClientSchemaMapping, Role
+from app.models.domain import Empresa, Usuario, ClientSchemaMapping, Role, WorkspaceMember
 
 router = APIRouter(prefix="/workspaces", tags=["Workspaces"])
 
@@ -42,10 +42,17 @@ def listar_empresas_do_usuario(
     Retorna a lista de empresas (workspaces) a que o usuário tem acesso.
     Para ADMINs, pode retornar todas. Para Analistas, retorna a empresa vinculada.
     """
-    if current_user.role == Role.ADMIN and not current_user.empresa_id:
+    if current_user.role == Role.ADMIN:
         empresas = db.query(Empresa).all()
     else:
-        empresas = db.query(Empresa).filter(Empresa.id == current_user.empresa_id).all()
+        # Join com WorkspaceMember para listar as empresas do usuário
+        empresas = db.query(Empresa).join(WorkspaceMember).filter(WorkspaceMember.usuario_id == current_user.id).all()
+        
+        # Fallback de retrocompatibilidade temporário: se o usuário tiver empresa_id fixo, adiciona à lista
+        if current_user.empresa_id:
+            empresa_default = db.query(Empresa).filter(Empresa.id == current_user.empresa_id).first()
+            if empresa_default and empresa_default not in empresas:
+                empresas.append(empresa_default)
     
     # Serialize UUIDs to string for JSON response
     return [
@@ -100,8 +107,10 @@ def atualizar_import_config(
     """
     Atualiza as configurações de importação (De-Para) do Workspace.
     """
-    if current_user.role != "ADMIN" and current_user.empresa_id != empresa_id:
-        raise HTTPException(status_code=403, detail="Acesso negado a este workspace.")
+    if current_user.role != "ADMIN":
+        membro = db.query(WorkspaceMember).filter_by(usuario_id=current_user.id, empresa_id=empresa_id).first()
+        if not membro and current_user.empresa_id != empresa_id:
+            raise HTTPException(status_code=403, detail="Acesso negado a este workspace.")
         
     empresa = db.query(Empresa).filter(Empresa.id == empresa_id).first()
     if not empresa:
@@ -121,8 +130,10 @@ def listar_mapeamentos(
     """
     Lista a 'memória' de mapeamentos de planilhas de uma empresa específica.
     """
-    if current_user.role != "ADMIN" and current_user.empresa_id != empresa_id:
-        raise HTTPException(status_code=403, detail="Acesso negado a este workspace.")
+    if current_user.role != "ADMIN":
+        membro = db.query(WorkspaceMember).filter_by(usuario_id=current_user.id, empresa_id=empresa_id).first()
+        if not membro and current_user.empresa_id != empresa_id:
+            raise HTTPException(status_code=403, detail="Acesso negado a este workspace.")
         
     mappings = db.query(ClientSchemaMapping).filter(ClientSchemaMapping.empresa_id == empresa_id).all()
     return mappings
@@ -138,8 +149,10 @@ def atualizar_mapeamento(
     """
     Permite que o Front-End salve um mapeamento manual feito pelo usuário para uma assinatura específica.
     """
-    if current_user.role != "ADMIN" and current_user.empresa_id != empresa_id:
-        raise HTTPException(status_code=403, detail="Acesso negado a este workspace.")
+    if current_user.role != "ADMIN":
+        membro = db.query(WorkspaceMember).filter_by(usuario_id=current_user.id, empresa_id=empresa_id).first()
+        if not membro and current_user.empresa_id != empresa_id:
+            raise HTTPException(status_code=403, detail="Acesso negado a este workspace.")
         
     mapping = db.query(ClientSchemaMapping).filter_by(
         empresa_id=empresa_id,

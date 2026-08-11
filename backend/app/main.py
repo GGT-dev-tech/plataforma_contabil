@@ -24,6 +24,9 @@ from contextlib import asynccontextmanager
 from alembic.config import Config
 from alembic import command
 import os
+
+from fastapi import Request
+from app.core.tenant import set_tenant_id, reset_tenant_id
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     yield
@@ -54,6 +57,22 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+@app.middleware("http")
+async def tenant_middleware(request: Request, call_next):
+    tenant_id = request.headers.get("X-Tenant-ID")
+    if tenant_id:
+        token = set_tenant_id(tenant_id)
+    else:
+        # If no tenant, we don't set it (remains None)
+        token = None
+        
+    try:
+        response = await call_next(request)
+        return response
+    finally:
+        if token:
+            reset_tenant_id(token)
 
 app.include_router(auth_router, prefix="/api/v1")
 app.include_router(staging_executions_router, prefix="/api/v1")

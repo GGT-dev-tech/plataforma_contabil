@@ -21,12 +21,25 @@ class Usuario(AuditableBase):
     role = Column(Enum(Role), default=Role.ANALISTA)
     is_active = Column(Boolean, default=True)
 
+    workspaces = relationship("WorkspaceMember", back_populates="usuario", cascade="all, delete-orphan")
+
 class Empresa(AuditableBase):
     __tablename__ = 'empresas'
     cnpj = Column(String, unique=True, index=True)
     razao_social = Column(String)
     nome_fantasia = Column(String)
     import_config = Column(JSON, nullable=True)
+
+    membros = relationship("WorkspaceMember", back_populates="empresa", cascade="all, delete-orphan")
+
+class WorkspaceMember(AuditableBase):
+    __tablename__ = 'workspace_members'
+    usuario_id = Column(String(36), ForeignKey('usuarios.id'), index=True, nullable=False)
+    empresa_id = Column(UUID(as_uuid=True), ForeignKey('empresas.id'), index=True, nullable=False)
+    role = Column(Enum(Role), default=Role.ANALISTA)
+    
+    usuario = relationship("Usuario", back_populates="workspaces")
+    empresa = relationship("Empresa", back_populates="membros")
 
 class ClientSchemaMapping(AuditableBase):
     __tablename__ = 'client_schema_mappings'
