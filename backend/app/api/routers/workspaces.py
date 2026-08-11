@@ -6,7 +6,6 @@ from uuid import UUID
 import uuid
 
 from app.api.deps import get_db
-from app.api.auth.dependencies import get_current_user
 from app.contexts.identity.auth_utils import get_current_user
 from app.models.domain import Empresa, Usuario, ClientSchemaMapping, Role, WorkspaceMember
 from app.contexts.staging_ingestion.parsers.dynamic_parser import DynamicTemplateParser
