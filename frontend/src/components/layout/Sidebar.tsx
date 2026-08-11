@@ -28,71 +28,47 @@ export const Sidebar: React.FC = () => {
       <nav className="flex-1 px-4 py-6 space-y-6 overflow-y-auto relative z-10 custom-scrollbar">
         
         <div>
-          <NavLink to="/" className={navItemClass}>
+          <NavLink to="/dashboard" className={navItemClass}>
             <Building2 className="w-4 h-4 mr-3" />
-            Hub de Clientes
+            Visão Geral (Dashboard)
           </NavLink>
         </div>
         
         <div>
           <p className="px-4 text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3 flex items-center gap-2">
-            <span className="w-2 h-[1px] bg-gray-500"></span> Conciliações
-          </p>
-          <NavLink to="/executions" className={navItemClass}>
-            <CheckCheck className="w-4 h-4 mr-3" />
-            Execuções & Conciliação
-          </NavLink>
-        </div>
-
-        <div>
-          <p className="px-4 text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3 flex items-center gap-2">
-            <span className="w-2 h-[1px] bg-gray-500"></span> CRM
-          </p>
-          <NavLink to="/crm" className={navItemClass}>
-            <Users className="w-4 h-4 mr-3" />
-            Clientes & Propostas
-          </NavLink>
-        </div>
-
-        <div>
-          <p className="px-4 text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3 flex items-center gap-2">
-            <span className="w-2 h-[1px] bg-gray-500"></span> Construtora
-          </p>
-          <NavLink to="/dashboard" className={navItemClass}>
-            <BarChart3 className="w-4 h-4 mr-3" />
-            Dashboard Tributário
-          </NavLink>
-          <NavLink to="/obras" className={navItemClass}>
-            <HardHat className="w-4 h-4 mr-3" />
-            Obras & RET
-          </NavLink>
-          <NavLink to="/documentos-fiscais" className={navItemClass}>
-            <ReceiptText className="w-4 h-4 mr-3" />
-            Documentos Fiscais
-          </NavLink>
-        </div>
-
-        <div>
-          <p className="px-4 text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3 flex items-center gap-2">
-            <span className="w-2 h-[1px] bg-gray-500"></span> Financeiro
+            <span className="w-2 h-[1px] bg-gray-500"></span> Motor Financeiro
           </p>
           <NavLink to="/receitas-despesas" className={navItemClass}>
-            <Receipt className="w-4 h-4 mr-3" />
-            Receitas & Despesas
-          </NavLink>
-          <NavLink to="/tesouraria" className={navItemClass}>
             <Landmark className="w-4 h-4 mr-3" />
-            Contas & Dinheiro
+            DRE Gerencial (Fluxo)
+          </NavLink>
+          <NavLink to="/executions" className={navItemClass}>
+            <CheckCheck className="w-4 h-4 mr-3" />
+            Conciliação (Fuzzy)
           </NavLink>
         </div>
 
         <div>
           <p className="px-4 text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3 flex items-center gap-2">
-            <span className="w-2 h-[1px] bg-gray-500"></span> Contábil
+            <span className="w-2 h-[1px] bg-gray-500"></span> Motor Fiscal
+          </p>
+          <NavLink to="/documentos-fiscais" className={navItemClass}>
+            <ReceiptText className="w-4 h-4 mr-3" />
+            Apurações Mensais
+          </NavLink>
+          <NavLink to="/crm" className={navItemClass}>
+            <BarChart3 className="w-4 h-4 mr-3" />
+            Config. Regimes Tributários
+          </NavLink>
+        </div>
+
+        <div>
+          <p className="px-4 text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3 flex items-center gap-2">
+            <span className="w-2 h-[1px] bg-gray-500"></span> Motor Contábil
           </p>
           <NavLink to="/exportacao-contabil" className={navItemClass}>
             <FileSpreadsheet className="w-4 h-4 mr-3" />
-            Exportação Contábil
+            Geração SPED (Celery)
           </NavLink>
         </div>
       </nav>
