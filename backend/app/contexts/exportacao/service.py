@@ -1,6 +1,6 @@
 from typing import List, Optional
 from sqlalchemy.orm import Session
-from app.models.lancamento_v2 import LancamentoContabilV2
+from app.models.ledger import LancamentoCabecalho
 from app.contexts.exportacao.adapters.base import ExportAdapter
 from app.contexts.exportacao.adapters.dominio_sistemas import DominioSistemasAdapter
 from app.contexts.exportacao.adapters.sped_ecd import SpedEcdAdapter
