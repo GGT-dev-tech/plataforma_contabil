@@ -5,7 +5,6 @@ from sqlalchemy.orm import Session
 from sqlalchemy import text
 from app.api.routers import workspaces
 from app.api.routers import fiscal
-from app.api.routers import ledger
 from app.contexts.identity.api import router as auth_router
 from app.contexts.staging_ingestion.api_executions import router as staging_executions_router
 from app.contexts.staging_ingestion.api_staging import router as staging_router
@@ -18,7 +17,6 @@ from app.api.routers.crm import router as crm_router
 from app.api.routers.tesouraria import router as tesouraria_router
 from app.api.routers.sincronizacao import router as sincronizacao_router
 from app.api.routers.analytics import router as analytics_router
-from app.api.routers.auth import router as auth_router
 from app.api.routers.sped import router as sped_router
 from app.core.config import settings
 from app.api.deps import get_db
@@ -90,7 +88,6 @@ app.include_router(crm_router, prefix="/api/v1")
 app.include_router(tesouraria_router, prefix="/api/v1")
 app.include_router(sincronizacao_router, prefix="/api/v1")
 app.include_router(analytics_router, prefix="/api/v1")
-app.include_router(ledger.router, prefix="/api/v1")
 app.include_router(sped_router, prefix="/api/v1")
 app.include_router(fiscal.router, prefix="/api/v1")
 app.include_router(auth_router) # Support /auth/login directly
