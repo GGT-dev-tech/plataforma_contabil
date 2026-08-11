@@ -184,8 +184,22 @@
       "bases:Criar nova base": false
     }
   },
-  "active": "f9d83a0e540f6e0b",
+  "active": "6add25c1510b4868",
   "lastOpenFiles": [
+    "Deep_Dive_Arquitetural/07_Auditoria_Limpeza.md",
+    "Deep_Dive_Arquitetural/06_Arquitetura_Ideal_Proposta.md",
+    "Deep_Dive_Arquitetural/05_Code_Review_Arquitetural.md",
+    "Deep_Dive_Arquitetural/04_Financeiro_Ledger_Deep_Dive.md",
+    "Deep_Dive_Arquitetural/03_Obras_Fiscal_Deep_Dive.md",
+    "Deep_Dive_Arquitetural/02_Staging_Deep_Dive.md",
+    "Deep_Dive_Arquitetural/01_Identity_Deep_Dive.md",
+    "Deep_Dive_Arquitetural",
+    "Architecture/05_Fluxos_de_Dados.md",
+    "Architecture/01_Visao_Geral_e_Infraestrutura.md",
+    "Architecture/04_Banco_de_Dados.md",
+    "Architecture/03_Arquitetura_Backend.md",
+    "Architecture/02_Arquitetura_Frontend.md",
+    "Architecture",
     "05 - Obrigacoes Acessorias e SPED.md",
     "08 - Observabilidade, Auditoria e Filas.md",
     "07 - Seguranca, Multi-Tenancy e RBAC.md",
