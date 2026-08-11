@@ -26,8 +26,8 @@ export const StagingUpload: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!despesas || !razao || !extrato) {
-      setErrorMsg('Por favor, selecione os três arquivos.');
+    if (!despesas && !razao && !extrato) {
+      setErrorMsg('Por favor, selecione pelo menos um arquivo.');
       return;
     }
 
@@ -43,9 +43,9 @@ export const StagingUpload: React.FC = () => {
 
       // 2. Upload Files
       const formData = new FormData();
-      formData.append('despesas', despesas);
-      formData.append('razao', razao);
-      formData.append('extrato', extrato);
+      if (despesas) formData.append('despesas', despesas);
+      if (razao) formData.append('razao', razao);
+      if (extrato) formData.append('extrato', extrato);
       await api.post(`/executions/${execution.id}/files`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });

@@ -71,8 +71,17 @@ def create_execution(payload: CreateExecutionRequest = None, db: Session = Depen
         uow.session.refresh(execucao)
         return execucao
 
+from typing import Optional
+
 @router.post("/{exec_id}/files", status_code=202)
-def upload_files(exec_id: str, despesas: UploadFile = File(...), razao: UploadFile = File(...), extrato: UploadFile = File(...), db: Session = Depends(get_db), current_user: Usuario = Depends(get_current_user)):
+def upload_files(
+    exec_id: str, 
+    despesas: Optional[UploadFile] = File(None), 
+    razao: Optional[UploadFile] = File(None), 
+    extrato: Optional[UploadFile] = File(None), 
+    db: Session = Depends(get_db), 
+    current_user: Usuario = Depends(get_current_user)
+):
     storage = LocalStorageProvider()
     with SQLAlchemyUnitOfWork(db) as uow:
         execucao = uow.executions.get(uow.session, exec_id)
@@ -80,7 +89,10 @@ def upload_files(exec_id: str, despesas: UploadFile = File(...), razao: UploadFi
         if current_user.role != Role.ADMIN and execucao.empresa_id != current_user.empresa_id:
             raise HTTPException(status_code=403, detail="Acesso negado a dados de outra empresa (Multi-Tenant).")
         
-        def save_and_hash(file_upload, tipo):
+        hashes = {}
+        def save_and_hash(file_upload, tipo, key_name):
+            if not file_upload or not file_upload.filename:
+                return None
             content = file_upload.file.read()
             file_upload.file.seek(0)
             sha256 = hashlib.sha256(content).hexdigest()
@@ -88,14 +100,18 @@ def upload_files(exec_id: str, despesas: UploadFile = File(...), razao: UploadFi
             path = storage.save(exec_id, file_upload.filename, file_upload.file)
             arquivo = ImportacaoArquivo(id=str(uuid.uuid4()), execucao_id=exec_id, nome_original=file_upload.filename, tipo=tipo, storage_path=path, hash_sha256=sha256, tamanho_bytes=tamanho, uploaded_by=current_user.id)
             uow.session.add(arquivo)
+            hashes[key_name] = file_upload.filename
             return file_upload.filename
             
-        f_desp = save_and_hash(despesas, TipoArquivo.DESPESA)
-        f_raz = save_and_hash(razao, TipoArquivo.RAZAO)
-        f_ext = save_and_hash(extrato, TipoArquivo.EXTRATO)
+        save_and_hash(despesas, TipoArquivo.DESPESA, "despesas")
+        save_and_hash(razao, TipoArquivo.RAZAO, "razao")
+        save_and_hash(extrato, TipoArquivo.EXTRATO, "extrato")
         
+        if not hashes:
+            raise HTTPException(status_code=400, detail="Pelo menos um arquivo deve ser fornecido para upload.")
+            
         execucao.status = StatusExecucao.ARQUIVOS_ANEXADOS
-        execucao.hashes_arquivos = json.dumps({"despesas": f_desp, "razao": f_raz, "extrato": f_ext})
+        execucao.hashes_arquivos = json.dumps(hashes)
         uow.commit()
     return {"message": "Files uploaded successfully", "exec_id": exec_id}
 

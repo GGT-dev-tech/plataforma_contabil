@@ -16,9 +16,8 @@ class GenericPDFAdapter(ImportAdapter):
         
     def parse(self, file_path: str, db_session: Session, execucao_id: str) -> bool:
         try:
-            logger.info(f"Extraindo dados via PDFPlumber de {file_path}")
+            logger.info(f"Extraindo dados via GenericPDFAdapter de {file_path}")
             
-            # Buscar a empresa_id da execucao
             execucao = db_session.query(ExecucaoPipeline).filter_by(id=execucao_id).first()
             empresa_id = execucao.empresa_id if execucao else None
             
@@ -31,37 +30,33 @@ class GenericPDFAdapter(ImportAdapter):
                             if len(line.strip()) > 5:
                                 extracted_lines.append(line.strip())
             
-            for i, text_line in enumerate(extracted_lines):
-                if len(text_line) < 10: continue
+            current_date = date.today()
+            registros_inseridos = 0
+
+            for text_line in extracted_lines:
+                if len(text_line) < 5:
+                    continue
                 
-                date_match = re.search(r'\d{2}/\d{2}/\d{4}', text_line)
-                data_val = date.today()
+                # Try to extract date
+                date_match = re.search(r'\b(\d{2}/\d{2}/\d{4})\b', text_line)
                 if date_match:
                     try:
-                        data_val = datetime.strptime(date_match.group(0), "%d/%m/%Y").date()
-                    except:
+                        current_date = datetime.strptime(date_match.group(1), "%d/%m/%Y").date()
+                    except Exception:
                         pass
                         
-                val_match = re.search(r'-?R\$\s*[\d\.,]+', text_line)
+                # Match monetary values (e.g., -R$ 1.234,56, R$ 500,00, -1.234,56, 370,05)
+                val_match = re.search(r'(-?(?:R\$\s*)?[\d\.]+\,\d{2})', text_line)
                 if not val_match:
                     continue
                     
-                valor = 0.0
-                # Captura tudo, depois extrai o sinal de menos se houver
-                match_str = val_match.group(0)
-                is_negative = match_str.startswith('-')
-                v_str = match_str.replace('-','').replace('R$', '').replace('.', '').replace(',', '.').strip()
-                try:
-                    valor = float(v_str)
-                    if is_negative:
-                        valor = -valor
-                except:
-                    pass
-                
-                # Inferir o tipo baseado no nome do arquivo
-                tipo_st = TipoStaging.EXTRATO
+                val_str = val_match.group(1)
+                valor = self._parse_float(val_str)
+                if valor == 0.0:
+                    continue
                 
                 filename_lower = file_path.lower()
+                tipo_st = TipoStaging.EXTRATO
                 if 'razao' in filename_lower or 'despesa' in filename_lower:
                     tipo_st = TipoStaging.DESPESA
                 elif 'extrato' in filename_lower:
@@ -72,14 +67,16 @@ class GenericPDFAdapter(ImportAdapter):
                     execucao_id=execucao_id,
                     empresa_id=empresa_id,
                     tipo=tipo_st, 
-                    data=data_val,
+                    data=current_date,
                     descricao=text_line[:255],
                     valor=valor,
                     processado=False
                 )
                 db_session.add(reg)
+                registros_inseridos += 1
                 
             db_session.commit()
+            logger.info(f"GenericPDFAdapter: {registros_inseridos} registros inseridos para {file_path}")
             return True
             
         except Exception as e:
