@@ -62,6 +62,7 @@ class LancamentoCabecalho(AuditableBase):
 
     partidas = relationship("PartidaItem", back_populates="cabecalho", cascade="all, delete-orphan")
     empresa = relationship("Empresa")
+    documento_fiscal = relationship("DocumentoFiscalV2", back_populates="lancamentos")
 
 class PartidaItem(AuditableBase):
     """
