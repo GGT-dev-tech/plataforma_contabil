@@ -55,6 +55,12 @@ from .ledger import (
     StatusPeriodo,
     ModuloOrigem,
 )
+from .obrigacoes import (
+    ObrigacaoAcessoriaJob,
+    MapeamentoContaReferencial,
+    StatusObrigacao,
+    TipoObrigacao,
+)
 
 __all__ = [
     # Base
@@ -75,4 +81,5 @@ __all__ = [
     "NaturezaConta", "TipoConta", "GrupoConta",
     "LancamentoCabecalho", "PartidaItem", "PeriodoContabil", 
     "TemplateLancamento", "TipoPartida", "StatusLancamento", "StatusPeriodo", "ModuloOrigem",
+    "ObrigacaoAcessoriaJob", "MapeamentoContaReferencial", "StatusObrigacao", "TipoObrigacao",
 ]

@@ -1,0 +1,26 @@
+# SPED ECD (Livro Diário) - Layout v12
+# Utilizado para validação posicional e geração dinâmica
+
+blocos:
+  I:
+    I200:
+      descricao: "Lançamento Contábil (Cabeçalho)"
+      campos:
+        1: { nome: "REG", tipo: "STR", tamanho: 4, fixo: "I200" }
+        2: { nome: "NUM_LCTO", tipo: "STR", tamanho: 50, obrigatorio: true }
+        3: { nome: "DT_LCTO", tipo: "DATA", formato: "DDMMAAAA", obrigatorio: true }
+        4: { nome: "VL_LCTO", tipo: "NUMERAL", dec: 2, obrigatorio: true }
+        5: { nome: "IND_LCTO", tipo: "STR", tamanho: 1, dominios: ["N", "E"] }
+        6: { nome: "DT_LCTO_EXT", tipo: "DATA", formato: "DDMMAAAA", obrigatorio: false }
+    I250:
+      descricao: "Partidas do Lançamento Contábil"
+      campos:
+        1: { nome: "REG", tipo: "STR", tamanho: 4, fixo: "I250" }
+        2: { nome: "COD_CTA", tipo: "STR", tamanho: 50, obrigatorio: true }
+        3: { nome: "COD_CCUS", tipo: "STR", tamanho: 50, obrigatorio: false }
+        4: { nome: "VL_DC", tipo: "NUMERAL", dec: 2, obrigatorio: true }
+        5: { nome: "IND_DC", tipo: "STR", tamanho: 1, dominios: ["D", "C"] }
+        6: { nome: "NUM_ARQ", tipo: "STR", tamanho: 50, obrigatorio: false }
+        7: { nome: "COD_HIST_PAD", tipo: "STR", tamanho: 50, obrigatorio: false }
+        8: { nome: "HIST", tipo: "STR", tamanho: 255, obrigatorio: true }
+        9: { nome: "COD_PART", tipo: "STR", tamanho: 50, obrigatorio: false }
