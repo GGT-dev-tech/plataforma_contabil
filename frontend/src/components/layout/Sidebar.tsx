@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Settings, Users, Receipt, Landmark, FileSpreadsheet, CheckCheck, Sparkles, Building2, BarChart3, HardHat, ReceiptText } from 'lucide-react';
+import { Settings, Landmark, FileSpreadsheet, CheckCheck, Sparkles, Building2, BarChart3, ReceiptText } from 'lucide-react';
 
 export const Sidebar: React.FC = () => {
   const navItemClass = ({ isActive }: { isActive: boolean }) => `

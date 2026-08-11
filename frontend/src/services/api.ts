@@ -39,6 +39,13 @@ apiClient.interceptors.request.use(
     if (token) {
       config.headers['Authorization'] = `Bearer ${token}`;
     }
+    
+    // Injeta o Workspace Ativo (Tenant) em todas as chamadas API
+    const activeWorkspaceId = localStorage.getItem('activeWorkspaceId');
+    if (activeWorkspaceId) {
+      config.headers['X-Tenant-ID'] = activeWorkspaceId;
+    }
+    
     return config;
   },
   (error) => {

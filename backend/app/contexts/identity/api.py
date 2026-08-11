@@ -33,11 +33,11 @@ def seed_admin(db: Session = Depends(get_db)):
         raise HTTPException(status_code=403, detail="Endpoint desabilitado em ambiente de produção.")
     
     with SQLAlchemyUnitOfWork(db) as uow:
-        if uow.session.query(Usuario).first():
-            raise HTTPException(status_code=400, detail="Banco já populado")
-        admin = Usuario(id=str(uuid.uuid4()), email="admin@contabil.com", hashed_password=get_password_hash("admin123"), nome="Administrador", role=Role.ADMIN)
-        analista = Usuario(id=str(uuid.uuid4()), email="analista@contabil.com", hashed_password=get_password_hash("analista123"), nome="Analista", role=Role.ANALISTA)
-        auditor = Usuario(id=str(uuid.uuid4()), email="auditor@contabil.com", hashed_password=get_password_hash("auditor123"), nome="Auditor", role=Role.AUDITOR)
-        uow.session.add_all([admin, analista, auditor])
-        uow.commit()
-    return {"message": "Usuários criados"}
+        admin_exists = uow.session.query(Usuario).filter(Usuario.email == "admin@contabil.com").first()
+        if not admin_exists:
+            admin = Usuario(id=str(uuid.uuid4()), email="admin@contabil.com", hashed_password=get_password_hash("admin123"), nome="Administrador", role=Role.ADMIN)
+            analista = Usuario(id=str(uuid.uuid4()), email="analista@contabil.com", hashed_password=get_password_hash("analista123"), nome="Analista", role=Role.ANALISTA)
+            auditor = Usuario(id=str(uuid.uuid4()), email="auditor@contabil.com", hashed_password=get_password_hash("auditor123"), nome="Auditor", role=Role.AUDITOR)
+            uow.session.add_all([admin, analista, auditor])
+            uow.commit()
+    return {"message": "Seed executado"}
