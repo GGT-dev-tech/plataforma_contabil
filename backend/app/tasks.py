@@ -1,7 +1,7 @@
 import logging
 from app.celery_app import celery_app
 from app.core.database import SessionLocal
-from app.contexts.conectores_erp.service import SincronizacaoService
+from app.contexts.conectores_erp.service import ConectorErpService
 
 logger = logging.getLogger(__name__)
 
@@ -20,20 +20,23 @@ def sincronizar_todas_empresas():
         # Vamos rodar para a empresa default.
         empresa_id = "32ecbd0c-25d2-43bb-a30f-b1eaf602ed05"
         
-        service = SincronizacaoService(db)
+        service = ConectorErpService(db)
         
         logger.info(f"Sincronizando Obras da empresa {empresa_id}")
         obras_sync = service.sincronizar_obras(empresa_id)
         
-        logger.info(f"Sincronizando Documentos da empresa {empresa_id}")
-        docs_sync = service.sincronizar_documentos(empresa_id)
+        # Pega a primeira obra para simular (MVP) a sincronização de documentos
+        docs_sync = []
+        if obras_sync:
+            logger.info(f"Sincronizando Documentos da obra {obras_sync[0].id}")
+            docs_sync = service.sincronizar_documentos(obras_sync[0].id)
         
-        logger.info(f"Sincronização concluída: {obras_sync.get('sincronizadas')} obras, {docs_sync.get('sincronizados')} documentos.")
+        logger.info(f"Sincronização concluída: {len(obras_sync)} obras, {len(docs_sync)} documentos.")
         
         return {
             "status": "success",
-            "obras": obras_sync.get('sincronizadas'),
-            "documentos": docs_sync.get('sincronizados')
+            "obras": len(obras_sync),
+            "documentos": len(docs_sync)
         }
         
     except Exception as e:
