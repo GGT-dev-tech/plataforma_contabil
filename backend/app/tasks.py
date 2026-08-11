@@ -1,7 +1,7 @@
 import logging
 from app.celery_app import celery_app
 from app.core.database import SessionLocal
-from app.contexts.conectores_erp.conector_service import SincronizacaoService
+from app.contexts.conectores_erp.service import SincronizacaoService
 
 logger = logging.getLogger(__name__)
 

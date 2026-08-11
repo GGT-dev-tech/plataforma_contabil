@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     REDIS_URL: str = "redis://localhost:6379/0"
     UPLOAD_STORAGE: str = "local"
     UPLOAD_PATH: str = "/app/uploads"
-    CORS_ORIGINS: list | str = ["http://localhost:5173", "https://frontend-staging.up.railway.app"]
+    CORS_ORIGINS: list | str = ["http://localhost:5173", "https://frontend-staging.up.railway.app", "https://frontend-production-687b.up.railway.app", "*"]
     LOG_LEVEL: str = "INFO"
     
     class Config:
