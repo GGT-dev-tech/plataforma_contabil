@@ -267,26 +267,61 @@ class AccountingEngine:
         self.db.add(cabecalho)
 
         tipo_str = str(mov.tipo.value if hasattr(mov.tipo, 'value') else mov.tipo)
+        desc_lower = str(mov.descricao_extrato or '').lower()
 
-        # ENTRADA / CRÉDITO = Receita Bruta
+        # ENTRADA / CRÉDITO
         if tipo_str in ["ENTRADA", "CREDITO"] or float(mov.valor) > 0:
-            conta_debito_id = self._get_or_create_conta(
-                codigo="1.1.1.01",
-                descricao="Caixa / Bancos Conta Movimento",
-                grupo=GrupoConta.ATIVO,
-                natureza=NaturezaConta.DEVEDORA
-            )
-            
-            cat_name = mov.categoria or "Receita de Vendas e Serviços"
-            classificacao = MAPA_DRE.get(mov.categoria, ClassificacaoDRE.RECEITA_BRUTA)
-            conta_credito_id = self._get_or_create_conta(
-                codigo=f"3.1.1.{cat_name[:3].upper()}",
-                descricao=f"Receita com {cat_name}",
-                grupo=GrupoConta.RESULTADO,
-                natureza=NaturezaConta.CREDORA,
-                classificacao_dre=classificacao
-            )
-            
+            # 1. Resgate de Aplicação ou Transferência Interna (Movimento Permutativo do Ativo - Sem DRE)
+            if "resgate" in desc_lower or "aplicacao" in desc_lower or "aplicação" in desc_lower or "transf" in desc_lower:
+                conta_debito_id = self._get_or_create_conta(
+                    codigo="1.1.1.01",
+                    descricao="Caixa / Bancos Conta Movimento",
+                    grupo=GrupoConta.ATIVO,
+                    natureza=NaturezaConta.DEVEDORA
+                )
+                conta_credito_id = self._get_or_create_conta(
+                    codigo="1.1.2.01",
+                    descricao="Aplicações Financeiras de Curto Prazo",
+                    grupo=GrupoConta.ATIVO,
+                    natureza=NaturezaConta.DEVEDORA,
+                    classificacao_dre=None
+                )
+                hist_cred = f"Resgate / Transferência Interna: {mov.descricao_extrato or ''}"
+            # 2. Rendimentos de Aplicação / Juros (Outras Receitas)
+            elif "rendimento" in desc_lower or "juros" in desc_lower:
+                conta_debito_id = self._get_or_create_conta(
+                    codigo="1.1.1.01",
+                    descricao="Caixa / Bancos Conta Movimento",
+                    grupo=GrupoConta.ATIVO,
+                    natureza=NaturezaConta.DEVEDORA
+                )
+                conta_credito_id = self._get_or_create_conta(
+                    codigo="3.1.2.REC",
+                    descricao="Rendimentos e Receitas Financeiras",
+                    grupo=GrupoConta.RESULTADO,
+                    natureza=NaturezaConta.CREDORA,
+                    classificacao_dre=ClassificacaoDRE.OUTRAS_RECEITAS
+                )
+                hist_cred = f"Receita Financeira: {mov.descricao_extrato or ''}"
+            # 3. Receita Bruta de Vendas / Serviços / Pix Recebido
+            else:
+                cat_name = mov.categoria or "Receita de Vendas e Serviços"
+                classificacao = MAPA_DRE.get(mov.categoria, ClassificacaoDRE.RECEITA_BRUTA)
+                conta_debito_id = self._get_or_create_conta(
+                    codigo="1.1.1.01",
+                    descricao="Caixa / Bancos Conta Movimento",
+                    grupo=GrupoConta.ATIVO,
+                    natureza=NaturezaConta.DEVEDORA
+                )
+                conta_credito_id = self._get_or_create_conta(
+                    codigo=f"3.1.1.{cat_name[:3].upper()}",
+                    descricao=f"Receita com {cat_name}",
+                    grupo=GrupoConta.RESULTADO,
+                    natureza=NaturezaConta.CREDORA,
+                    classificacao_dre=classificacao
+                )
+                hist_cred = f"Crédito Bancário: {mov.descricao_extrato or ''}"
+
             partida_deb = PartidaItem(
                 id=self._to_uuid(uuid.uuid4()),
                 empresa_id=self._to_uuid(self.empresa_id),
@@ -304,7 +339,7 @@ class AccountingEngine:
                 conta_contabil_id=conta_credito_id,
                 natureza=TipoPartida.CREDITO,
                 valor=val,
-                historico_complementar=f"Crédito Bancário: {mov.descricao_extrato or ''}"
+                historico_complementar=hist_cred
             )
             self.db.add(partida_deb)
             self.db.add(partida_cred)

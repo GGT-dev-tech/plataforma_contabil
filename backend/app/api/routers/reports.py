@@ -76,3 +76,73 @@ def download_dre_report(
         headers=headers,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
     )
+
+@router.get("/balancete")
+def get_balancete_report(
+    workspace_id: UUID,
+    ano: int,
+    mes: Optional[int] = None,
+    db: Session = Depends(get_db)
+):
+    from app.contexts.accounting.balancete_service import BalanceteService
+    import calendar
+    m = mes or 6
+    _, last_day = calendar.monthrange(ano, m)
+    dt_inicio = date(ano, m, 1)
+    dt_fim = date(ano, m, last_day)
+
+    service = BalanceteService(db)
+    return service.calcular_balancete(workspace_id, dt_inicio, dt_fim)
+
+@router.get("/balancete/download")
+def download_balancete_report(
+    workspace_id: UUID,
+    ano: int,
+    mes: Optional[int] = None,
+    db: Session = Depends(get_db)
+):
+    from app.contexts.accounting.balancete_service import BalanceteService
+    import calendar
+    m = mes or 6
+    _, last_day = calendar.monthrange(ano, m)
+    dt_inicio = date(ano, m, 1)
+    dt_fim = date(ano, m, last_day)
+
+    service = BalanceteService(db)
+    dados = service.calcular_balancete(workspace_id, dt_inicio, dt_fim)
+    excel_bytes = service.exportar_excel(dados)
+
+    filename = f"Balancete_Analitico_{workspace_id}_{ano}_{m:02d}.xlsx"
+    headers = {'Content-Disposition': f'attachment; filename="{filename}"'}
+    return Response(
+        content=excel_bytes,
+        headers=headers,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+
+@router.get("/conciliacao")
+def get_conciliacao_report(
+    workspace_id: UUID,
+    db: Session = Depends(get_db)
+):
+    from app.contexts.matching_auditing.reconciliation_report_service import ReconciliationReportService
+    service = ReconciliationReportService(db)
+    return service.gerar_relatorio_resumo(workspace_id)
+
+@router.get("/conciliacao/download")
+def download_conciliacao_report(
+    workspace_id: UUID,
+    db: Session = Depends(get_db)
+):
+    from app.contexts.matching_auditing.reconciliation_report_service import ReconciliationReportService
+    service = ReconciliationReportService(db)
+    dados = service.gerar_relatorio_resumo(workspace_id)
+    excel_bytes = service.exportar_excel(dados)
+
+    filename = f"Relatorio_Conciliacao_Bancaria_{workspace_id}.xlsx"
+    headers = {'Content-Disposition': f'attachment; filename="{filename}"'}
+    return Response(
+        content=excel_bytes,
+        headers=headers,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )

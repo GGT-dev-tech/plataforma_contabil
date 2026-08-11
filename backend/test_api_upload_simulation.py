@@ -125,6 +125,9 @@ def run_simulation():
 
     # PASSO 6: DRE Gerencial pós-upload e pós-conciliação
     from app.contexts.accounting.dre_service import DREService
+    from app.contexts.accounting.balancete_service import BalanceteService
+    from app.contexts.matching_auditing.reconciliation_report_service import ReconciliationReportService
+
     dre_service = DREService(db)
     dre = dre_service.calcular_dre_periodo(user.empresa_id, date(2026, 6, 1), date(2026, 6, 30))
 
@@ -133,6 +136,39 @@ def run_simulation():
         prefix = "==> " if linha["is_subtotal"] else "    "
         print(f"{prefix}{linha['descricao']:<45}: R$ {linha['valor']:>12,.2f}")
 
+    # Balancete Analítico
+    balancete_service = BalanceteService(db)
+    balancete = balancete_service.calcular_balancete(user.empresa_id, date(2026, 6, 1), date(2026, 6, 30))
+
+    print("\n--- RESUMO DO BALANCETE ANALÍTICO CONTÁBIL ---")
+    print(f"Total de Débitos  : R$ {balancete['totais']['total_debitos']:>12,.2f}")
+    print(f"Total de Créditos : R$ {balancete['totais']['total_creditos']:>12,.2f}")
+    print(f"Balanço Equilibrado: {'SIM' if balancete['totais']['equilibrado'] else 'NÃO'}")
+
+    # Conciliação Bancária & Auditoria
+    conc_service = ReconciliationReportService(db)
+    res_conc = conc_service.gerar_relatorio_resumo(user.empresa_id)
+
+    print("\n--- RESUMO DA CONCILIAÇÃO BANCÁRIA (3-WAY MATCHING) ---")
+    res_kpi = res_conc["resumo"]
+    print(f"Total de Títulos ERP         : {res_kpi['total_titulos_erp']}")
+    print(f"Títulos Liquidados/Conciliados: {res_kpi['titulos_efetivados_count']} (R$ {res_kpi['total_pago_efetivado']:,.2f})")
+    print(f"Títulos em Aberto ERP        : {res_kpi['titulos_em_aberto_count']} (R$ {res_kpi['total_em_aberto']:,.2f})")
+    print(f"Taxa de Conciliação Bancária : {res_kpi['taxa_conciliacao']}%")
+
+    # Exportar Arquivos Excel para dissecação e auditoria
+    os.makedirs("/app/saida", exist_ok=True)
+    with open("/app/saida/DRE_Junho_2026.xlsx", "wb") as f:
+        f.write(dre_service.exportar_excel(dre, "Junho / 2026"))
+    with open("/app/saida/Balancete_Analitico_Junho_2026.xlsx", "wb") as f:
+        f.write(balancete_service.exportar_excel(balancete))
+    with open("/app/saida/Relatorio_Conciliacao_Bancaria_Junho_2026.xlsx", "wb") as f:
+        f.write(conc_service.exportar_excel(res_conc))
+
+    print("\n=== PLANILHAS EXCEL DE SAÍDA GERADAS EM /app/saida/ ===")
+    print(" 1. /app/saida/DRE_Junho_2026.xlsx")
+    print(" 2. /app/saida/Balancete_Analitico_Junho_2026.xlsx")
+    print(" 3. /app/saida/Relatorio_Conciliacao_Bancaria_Junho_2026.xlsx")
     print("\n=== TESTE DO FLUXO COMPLETO DO FRONTEND CONCLUÍDO COM SUCESSO! ===")
 
 if __name__ == "__main__":
