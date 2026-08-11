@@ -13,7 +13,7 @@ class StagingService:
         self.db = db
         self.tax_engine = TaxEngine(regime_tributario=regime_tributario)
 
-    def process_staging_items(self, exec_id: str, staging_items: List[StagingRegistro]) -> Dict[str, Any]:
+    def process_staging_items(self, exec_id: str, staging_items: List[StagingRegistro], empresa_id: Any = None) -> Dict[str, Any]:
         tax_summary = {
             "total_receitas": 0.0, 
             "total_despesas": 0.0, 
@@ -22,20 +22,26 @@ class StagingService:
         }
 
         for item in staging_items:
-            self._process_item(exec_id, item, tax_summary)
-            item.processado = True
+            self._process_item(exec_id, item, tax_summary, empresa_id=empresa_id)
+
+        # Bulk update processado flag to prevent deadlock
+        from app.models.domain import StagingRegistro
+        self.db.query(StagingRegistro).filter(
+            StagingRegistro.execucao_id == str(exec_id),
+            StagingRegistro.processado == False
+        ).update({"processado": True}, synchronize_session=False)
 
         return {
             "tax_summary": tax_summary
         }
 
-    def _process_item(self, exec_id: str, item: StagingRegistro, tax_summary: Dict[str, float]):
+    def _process_item(self, exec_id: str, item: StagingRegistro, tax_summary: Dict[str, float], empresa_id: Any = None):
         if item.tipo == TipoStaging.RECEITA:
-            self._process_receita(exec_id, item, tax_summary)
+            self._process_receita(exec_id, item, tax_summary, empresa_id=empresa_id)
         elif item.tipo == TipoStaging.DESPESA:
-            self._process_despesa(exec_id, item, tax_summary)
+            self._process_despesa(exec_id, item, tax_summary, empresa_id=empresa_id)
         elif item.tipo in [TipoStaging.EXTRATO, TipoStaging.DINHEIRO]:
-            self._process_movimentacao(exec_id, item)
+            self._process_movimentacao(exec_id, item, empresa_id=empresa_id)
 
     def _process_receita(self, exec_id: str, item: StagingRegistro, tax_summary: Dict[str, float]):
         rec = Receita(
@@ -53,7 +59,7 @@ class StagingService:
         tax_summary["total_receitas"] += float(item.valor)
         tax_summary["impostos_devidos"] += sum(float(t.valor_tributo) for t in taxes if t.tipo == "DEVIDO")
 
-    def _process_despesa(self, exec_id: str, item: StagingRegistro, tax_summary: Dict[str, float]):
+    def _process_despesa(self, exec_id: str, item: StagingRegistro, tax_summary: Dict[str, float], empresa_id: Any = None):
         forn = None
         if item.entidade_nome:
             forn = self.db.query(Fornecedor).filter(Fornecedor.nome == item.entidade_nome).first()
@@ -67,13 +73,17 @@ class StagingService:
                 self.db.add(forn)
                 self.db.flush()
 
-        execucao = self.db.query(ExecucaoPipeline).filter(ExecucaoPipeline.id == exec_id).first()
-        empresa_id = item.empresa_id or (execucao.empresa_id if execucao else None)
+        execucao = self.db.query(ExecucaoPipeline).filter(ExecucaoPipeline.id == str(exec_id)).first()
+        emp_id = item.empresa_id or empresa_id or (execucao.empresa_id if execucao else None)
+        if not emp_id:
+            from app.models.domain import Empresa
+            first_emp = self.db.query(Empresa).first()
+            if first_emp: emp_id = first_emp.id
 
         # Criação do Título (substituindo Despesa/ParcelaDespesa)
         titulo = TituloFinanceiro(
             id=str(uuid.uuid4()), 
-            empresa_id=empresa_id,
+            empresa_id=emp_id,
             tipo=TipoTitulo.PAGAR,
             descricao=item.descricao,
             fornecedor_cliente_nome=item.entidade_nome,
@@ -89,13 +99,17 @@ class StagingService:
         tax_summary["total_despesas"] += float(item.valor)
         tax_summary["impostos_retidos"] += sum(float(t.valor_tributo) for t in taxes if t.tipo == "RETIDO")
 
-    def _process_movimentacao(self, exec_id: str, item: StagingRegistro):
-        execucao = self.db.query(ExecucaoPipeline).filter(ExecucaoPipeline.id == exec_id).first()
-        empresa_id = item.empresa_id or (execucao.empresa_id if execucao else None)
+    def _process_movimentacao(self, exec_id: str, item: StagingRegistro, empresa_id: Any = None):
+        execucao = self.db.query(ExecucaoPipeline).filter(ExecucaoPipeline.id == str(exec_id)).first()
+        emp_id = item.empresa_id or empresa_id or (execucao.empresa_id if execucao else None)
+        if not emp_id:
+            from app.models.domain import Empresa
+            first_emp = self.db.query(Empresa).first()
+            if first_emp: emp_id = first_emp.id
 
         mov = MovimentacaoFinanceira(
             id=str(uuid.uuid4()), 
-            empresa_id=empresa_id,
+            empresa_id=emp_id,
             tipo=TipoMovimentacao.ENTRADA if item.valor > 0 else TipoMovimentacao.SAIDA,
             data_transacao=item.data, 
             descricao_extrato=item.descricao,

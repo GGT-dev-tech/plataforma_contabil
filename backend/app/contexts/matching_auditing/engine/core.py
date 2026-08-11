@@ -356,17 +356,19 @@ class MatchOrchestrator:
                     # Perdeu pra outro ou score zero
                     mc_status = StatusCandidato.REJEITADO_PELO_MOTOR
                     motivo_descarte = f"Score insuficiente ou menor que o vencedor ({best_score:.2f})"
-                    self.candidates_discard_engine_log.append({
-                        "mov_id": str(mov.id), "titulo_id": str(t.id) if t else None, 
-                        "motivo": motivo_descarte, "score": score
-                    })
+                    if len(self.candidates_discard_engine_log) < 500:
+                        self.candidates_discard_engine_log.append({
+                            "mov_id": str(mov.id), "titulo_id": str(t.id) if t else None, 
+                            "motivo": motivo_descarte, "score": score
+                        })
 
-                mc = MatchCandidate(
-                    id=str(uuid.uuid4()), execucao_id=self.execucao.id, movimentacao_financeira_id=mov.id, titulo_id=t.id if t else None, lancamento_cabecalho_id=l.id if l else None,
-                    score_total=score, status=mc_status, motivo_descarte=motivo_descarte if mc_status == StatusCandidato.REJEITADO_PELO_MOTOR else None,
-                    explanation_snapshot=json.dumps(regras_json)
-                )
-                self.db.add(mc)
+                if score > 0 or mc_status in (StatusCandidato.APROVADO, StatusCandidato.PENDENTE_REVISAO):
+                    mc = MatchCandidate(
+                        id=str(uuid.uuid4()), execucao_id=self.execucao.id, movimentacao_financeira_id=mov.id, titulo_id=t.id if t else None, lancamento_cabecalho_id=l.id if l else None,
+                        score_total=score, status=mc_status, motivo_descarte=motivo_descarte if mc_status == StatusCandidato.REJEITADO_PELO_MOTOR else None,
+                        explanation_snapshot=json.dumps(regras_json)
+                    )
+                    self.db.add(mc)
 
                 # Mantendo LOGs compatíveis para E2E CSV
                 if mc_status in (StatusCandidato.APROVADO, StatusCandidato.PENDENTE_REVISAO):

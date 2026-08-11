@@ -58,6 +58,12 @@ def create_execution(payload: CreateExecutionRequest = None, db: Session = Depen
         else:
             raise HTTPException(status_code=403, detail="Acesso negado ao Workspace selecionado.")
     
+    if empresa_selecionada and not isinstance(empresa_selecionada, uuid.UUID):
+        try:
+            empresa_selecionada = uuid.UUID(str(empresa_selecionada))
+        except Exception:
+            empresa_selecionada = None
+            
     with SQLAlchemyUnitOfWork(db) as uow:
         execucao = ExecucaoPipeline(
             id=str(uuid.uuid4()), 

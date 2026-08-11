@@ -45,6 +45,13 @@ def execute_pipeline_core(execucao_id: str, db: Session):
                     else:
                         logger.warning(f"Nenhum parser encontrado para {imp.nome_original} (Tipo: {imp.tipo})")
                 
+                if execucao.empresa_id:
+                    from app.models.domain import StagingRegistro
+                    db.query(StagingRegistro).filter(
+                        StagingRegistro.execucao_id == execucao_id, 
+                        StagingRegistro.empresa_id == None
+                    ).update({"empresa_id": execucao.empresa_id}, synchronize_session=False)
+                
                 execucao.status = StatusExecucao.AGUARDANDO_REVISAO_STAGING
                 db.commit()
                 logger.info(f"Pipeline fase 1 (Parsing) concluído. Aguardando revisão no Frontend.")
@@ -64,8 +71,8 @@ def execute_pipeline_core(execucao_id: str, db: Session):
                 ).all()
                 
                 if staging_items:
-                    staging_service = StagingService(db)
-                    staging_service.process_staging_items(execucao_id, staging_items)
+                    service = StagingService(db)
+                    service.process_staging_items(execucao_id, staging_items, empresa_id=execucao.empresa_id)
                     db.commit()
                     logger.info(f"Convertidos {len(staging_items)} registros de Staging.")
                 
