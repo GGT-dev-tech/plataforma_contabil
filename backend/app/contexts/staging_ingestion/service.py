@@ -2,7 +2,7 @@ import uuid
 from typing import Dict, Any, List
 from sqlalchemy.orm import Session
 from app.models.domain import (
-    StagingRegistro, TipoStaging, Receita, Fornecedor
+    StagingRegistro, TipoStaging, Receita, Fornecedor, ExecucaoPipeline
 )
 from app.models.financeiro import TituloFinanceiro, TipoTitulo, MovimentacaoFinanceira, TipoMovimentacao
 
@@ -67,10 +67,13 @@ class StagingService:
                 self.db.add(forn)
                 self.db.flush()
 
+        execucao = self.db.query(ExecucaoPipeline).filter(ExecucaoPipeline.id == exec_id).first()
+        empresa_id = item.empresa_id or (execucao.empresa_id if execucao else None)
+
         # Criação do Título (substituindo Despesa/ParcelaDespesa)
         titulo = TituloFinanceiro(
             id=str(uuid.uuid4()), 
-            empresa_id=item.empresa_id,
+            empresa_id=empresa_id,
             tipo=TipoTitulo.PAGAR,
             descricao=item.descricao,
             fornecedor_cliente_nome=item.entidade_nome,
@@ -87,9 +90,12 @@ class StagingService:
         tax_summary["impostos_retidos"] += sum(float(t.valor_tributo) for t in taxes if t.tipo == "RETIDO")
 
     def _process_movimentacao(self, exec_id: str, item: StagingRegistro):
+        execucao = self.db.query(ExecucaoPipeline).filter(ExecucaoPipeline.id == exec_id).first()
+        empresa_id = item.empresa_id or (execucao.empresa_id if execucao else None)
+
         mov = MovimentacaoFinanceira(
             id=str(uuid.uuid4()), 
-            empresa_id=item.empresa_id,
+            empresa_id=empresa_id,
             tipo=TipoMovimentacao.ENTRADA if item.valor > 0 else TipoMovimentacao.SAIDA,
             data_transacao=item.data, 
             descricao_extrato=item.descricao,

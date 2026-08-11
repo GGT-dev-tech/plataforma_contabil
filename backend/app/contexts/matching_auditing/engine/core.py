@@ -13,8 +13,8 @@ from app.models.domain import (
     ExecucaoPipeline, StatusExecucao,
     MatchCandidate, StatusCandidato, CandidateEvaluationLog
 )
-from app.models.financeiro import MovimentacaoFinanceira, TituloFinanceiro
-from app.models.ledger import LancamentoCabecalho
+from app.models.financeiro import MovimentacaoFinanceira, TituloFinanceiro, StatusTitulo
+from app.models.ledger import LancamentoCabecalho, StatusLancamento
 from app.contexts.matching_auditing.engine.rules import IMatchingRule, RuleResult
 
 def load_matching_profile():
@@ -46,12 +46,14 @@ class CandidateGenerator:
         for t in titulos_pendentes:
             self.metrics["avaliados_total"] += 1
             if not t.data_vencimento or not mov.data_transacao:
-                self.discard_log.append({"mov_id": str(mov.id), "titulo_id": str(t.id), "motivo": "Data ausente"})
+                if len(self.discard_log) < 500:
+                    self.discard_log.append({"mov_id": str(mov.id), "titulo_id": str(t.id), "motivo": "Data ausente"})
                 self.metrics["descartados_data"] += 1
                 continue
             days_diff = abs((t.data_vencimento - mov.data_transacao).days)
             if days_diff > 10:
-                self.discard_log.append({"mov_id": str(mov.id), "titulo_id": str(t.id), "motivo": f"Data fora da janela (+-10 dias). Diff: {days_diff}"})
+                if len(self.discard_log) < 500:
+                    self.discard_log.append({"mov_id": str(mov.id), "titulo_id": str(t.id), "motivo": f"Data fora da janela (+-10 dias). Diff: {days_diff}"})
                 self.metrics["descartados_data"] += 1
                 continue
             candidatos_titulos.append(t)
@@ -171,11 +173,36 @@ class SuggestionEngine:
         item = ConciliacaoItem(
             id=str(uuid.uuid4()),
             conciliacao_id=conciliacao.id,
-            titulo_id=self._to_uuid(titulo_id),
-            movimentacao_financeira_id=self._to_uuid(mov_id),
+            titulo_id=str(titulo_id) if titulo_id else None,
+            movimentacao_financeira_id=str(mov_id) if mov_id else None,
             lancamento_cabecalho_id=self._to_uuid(lanc_id)
         )
         self.db.add(item)
+
+        # Atualizar entidades financeiras e registrar ConciliacaoFinanceira
+        mov = self.db.query(MovimentacaoFinanceira).filter(MovimentacaoFinanceira.id == str(mov_id)).first()
+        if mov:
+            mov.conciliada = True
+
+            if titulo_id:
+                titulo = self.db.query(TituloFinanceiro).filter(TituloFinanceiro.id == str(titulo_id)).first()
+                if titulo:
+                    from app.models.financeiro import ConciliacaoFinanceira, StatusTitulo
+                    titulo.status = StatusTitulo.LIQUIDADO
+                    titulo.valor_pago = abs(mov.valor)
+                    titulo.data_pagamento = mov.data_transacao
+
+                    cf = ConciliacaoFinanceira(
+                        id=str(uuid.uuid4()),
+                        empresa_id=mov.empresa_id,
+                        titulo_id=titulo.id,
+                        movimentacao_id=mov.id,
+                        valor_conciliado=abs(mov.valor),
+                        data_conciliacao=mov.data_transacao,
+                        match_automatico=True,
+                        confianca_match=float(score) / 100.0
+                    )
+                    self.db.add(cf)
         
         for rule in regras_json:
             explicacao = ConciliacaoExplicacao(
@@ -230,9 +257,20 @@ class MatchOrchestrator:
         self.start_time = time.perf_counter()
 
     def run_pipeline(self) -> Dict[str, Any]:
-        movs = self.db.query(MovimentacaoFinanceira).filter(MovimentacaoFinanceira.conciliada == False).all()
-        titulos = self.db.query(TituloFinanceiro).filter(TituloFinanceiro.status == 'ABERTO').all()
-        lancamentos = self.db.query(LancamentoCabecalho).filter(LancamentoCabecalho.status == 'RASCUNHO').all()
+        empresa_id = self.execucao.empresa_id if self.execucao else None
+
+        movs_q = self.db.query(MovimentacaoFinanceira).filter(MovimentacaoFinanceira.conciliada == False)
+        titulos_q = self.db.query(TituloFinanceiro).filter(TituloFinanceiro.status.in_(['ABERTO', StatusTitulo.ABERTO]))
+        lanc_q = self.db.query(LancamentoCabecalho).filter(LancamentoCabecalho.status.in_(['RASCUNHO', StatusLancamento.RASCUNHO]))
+
+        if empresa_id:
+            movs_q = movs_q.filter(MovimentacaoFinanceira.empresa_id == empresa_id)
+            titulos_q = titulos_q.filter(TituloFinanceiro.empresa_id == empresa_id)
+            lanc_q = lanc_q.filter(LancamentoCabecalho.empresa_id == empresa_id)
+
+        movs = movs_q.all()
+        titulos = titulos_q.all()
+        lancamentos = lanc_q.all()
         
         conciliados_mov = self.db.query(ConciliacaoItem.movimentacao_financeira_id).all()
         conciliados_mov_ids = {c[0] for c in conciliados_mov if c[0]}
@@ -258,15 +296,17 @@ class MatchOrchestrator:
             best_details = []
             best_rules = []
             
-            # Persistir descartes do generator no funil leve
+            # Persistir descartes do generator no funil leve (máximo 500 para performance)
+            eval_log_count = 0
             for t, l, motivo in candidatos_avaliados:
-                if motivo:
+                if motivo and eval_log_count < 500:
                     cel = CandidateEvaluationLog(
                         id=str(uuid.uuid4()), execucao_id=self.execucao.id, movimentacao_financeira_id=mov.id, 
                         titulo_id=t.id if t else None, lancamento_cabecalho_id=l.id if l else None,
                         motivo_descarte=motivo
                     )
                     self.db.add(cel)
+                    eval_log_count += 1
             
             # Avaliar válidos
             valid_candidates = [c for c in candidatos_avaliados if c[2] is None]
@@ -283,7 +323,7 @@ class MatchOrchestrator:
                 
                 if score > best_score:
                     best_score = score
-                    best_candidate = (p, l)
+                    best_candidate = (t, l)
                     best_details = details
                     best_rules = applied
 

@@ -48,6 +48,8 @@ class DespesasERPAdapter(ImportAdapter):
             parcela_data = self._parse_date(row.get('vencimento parcela'))
             parcela_valor = valor_parcela
             fornecedor_nome = str(row.get('fornecedor', ''))
+            cat_raw = str(row.get('categoria financeira', '') or row.get('categoria', '') or row.get('plano de conta', '')).strip()
+            categoria_val = cat_raw if cat_raw and cat_raw != 'nan' else None
             
             stag = StagingRegistro(
                 id=str(uuid.uuid4()),
@@ -55,8 +57,9 @@ class DespesasERPAdapter(ImportAdapter):
                 tipo=TipoStaging.DESPESA,
                 data=parcela_data,
                 valor=parcela_valor,
-                descricao=f"Nº Doc ERP: {id_despesa}",
+                descricao=f"Nº Doc ERP: {id_despesa} - {fornecedor_nome}",
                 entidade_nome=fornecedor_nome,
+                categoria=categoria_val,
                 processado=False
             )
             db_session.add(stag)

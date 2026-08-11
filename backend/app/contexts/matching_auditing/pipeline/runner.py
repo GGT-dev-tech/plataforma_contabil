@@ -96,6 +96,7 @@ def execute_pipeline_core(execucao_id: str, db: Session):
             
         except Exception as e:
             logger.error(f"Erro no pipeline {execucao_id}: {e}")
+            db.rollback()
             execucao = db.query(ExecucaoPipeline).filter(ExecucaoPipeline.id == execucao_id).first()
             if execucao:
                 execucao.status = StatusExecucao.ERRO

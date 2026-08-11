@@ -61,7 +61,7 @@ class DREService:
                 LancamentoCabecalho.empresa_id == empresa_id,
                 LancamentoCabecalho.data_competencia >= dt_inicio,
                 LancamentoCabecalho.data_competencia <= dt_fim,
-                LancamentoCabecalho.status == StatusLancamento.EFETIVADO,
+                LancamentoCabecalho.status.in_([StatusLancamento.CONFIRMADO, StatusLancamento.EXPORTADO]),
                 PlanoDeContas.classificacao_dre.isnot(None)
             )
             .group_by(PlanoDeContas.classificacao_dre)
