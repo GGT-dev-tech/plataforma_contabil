@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { apiClient } from '../../services/api';
 import { Building2, LogIn } from 'lucide-react';
 import { Button } from '../../components/ui/Button';
+import { Role } from '../../types/user';
 
 export const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -47,7 +48,7 @@ export const LoginPage: React.FC = () => {
         id: payload.sub,
         email: payload.email,
         nome: payload.nome,
-        is_admin: payload.role === 'admin'
+        role: payload.role as Role
       };
 
       login(token, user);

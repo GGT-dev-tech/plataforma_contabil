@@ -1,5 +1,5 @@
 import React from 'react';
-import { useAuth } from '../auth/AuthProvider';
+import { useAuth } from '../contexts/AuthContext';
 import { Link } from 'react-router-dom';
 
 export const NavBar: React.FC = () => {

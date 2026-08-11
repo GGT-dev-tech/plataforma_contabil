@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useExecutions } from '../hooks/useExecution';
-import { useAuth } from '../auth/AuthProvider';
+import { useAuth } from '../contexts/AuthContext';
 import { DataTable } from '../components/ui/DataTable';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { PageHeader } from '../components/layout/PageHeader';
