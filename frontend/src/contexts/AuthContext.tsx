@@ -21,21 +21,33 @@ const AuthContext = createContext<AuthContextType>({
 export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
+  const [token, setToken] = useState<string | null>(() => localStorage.getItem('@App:token'));
+  const [user, setUser] = useState<User | null>(() => {
+    const storedUser = localStorage.getItem('@App:user');
+    if (storedUser && storedUser !== 'undefined') {
+      try {
+        return JSON.parse(storedUser);
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  });
 
   useEffect(() => {
+    // Apenas garante limpeza em caso de erro, já foi lido no useState
     const storedToken = localStorage.getItem('@App:token');
     const storedUser = localStorage.getItem('@App:user');
 
     if (storedToken && storedUser && storedUser !== 'undefined') {
       try {
-        setUser(JSON.parse(storedUser));
-        setToken(storedToken);
+        JSON.parse(storedUser); // Valida
       } catch (e) {
         console.error("Erro ao fazer parse do usuário do localStorage", e);
         localStorage.removeItem('@App:user');
         localStorage.removeItem('@App:token');
+        setToken(null);
+        setUser(null);
       }
     }
   }, []);
