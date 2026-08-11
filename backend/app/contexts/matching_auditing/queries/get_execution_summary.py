@@ -12,10 +12,10 @@ class GetExecutionSummaryQueryHandler:
     def execute(db: Session, exec_id: str) -> Dict[str, int]:
         query = text("""
             SELECT 
-                (SELECT COUNT(1) FROM movimentacao_bancaria WHERE execucao_id = :exec_id) as total_movimentacoes,
-                (SELECT COUNT(1) FROM match_candidate WHERE execucao_id = :exec_id AND status = 'APROVADO') as total_aprovados,
-                (SELECT COUNT(1) FROM match_candidate WHERE execucao_id = :exec_id AND status = 'PENDENTE_REVISAO') as total_pendentes,
-                (SELECT COUNT(1) FROM match_candidate WHERE execucao_id = :exec_id AND status = 'REJEITADO_PELO_MOTOR') as total_rejeitados,
+                (SELECT COUNT(1) FROM staging_registro WHERE execucao_id = :exec_id AND tipo IN ('EXTRATO', 'DINHEIRO')) as total_movimentacoes,
+                (SELECT COUNT(1) FROM match_candidates WHERE execucao_id = :exec_id AND status = 'APROVADO') as total_aprovados,
+                (SELECT COUNT(1) FROM match_candidates WHERE execucao_id = :exec_id AND status = 'PENDENTE_REVISAO') as total_pendentes,
+                (SELECT COUNT(1) FROM match_candidates WHERE execucao_id = :exec_id AND status = 'REJEITADO_PELO_MOTOR') as total_rejeitados,
                 (SELECT tax_summary FROM execucoes_pipeline WHERE id = :exec_id) as tax_summary
         """)
         

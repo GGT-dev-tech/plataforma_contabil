@@ -83,88 +83,6 @@ class CategoriaFinanceira(AuditableBase):
     __tablename__ = 'categorias_financeiras'
     nome = Column(String)
 
-class ExtratoBancario(AuditableBase):
-    __tablename__ = 'extratos_bancarios'
-    conta_bancaria_id = Column(UUID(as_uuid=True), ForeignKey('contas_bancarias.id'))
-    data_inicio = Column(Date)
-    data_fim = Column(Date)
-    saldo_inicial = Column(Numeric(15, 2))
-    saldo_final = Column(Numeric(15, 2))
-
-class TipoMovimentacao(str, enum.Enum):
-    D = "DEBITO"
-    C = "CREDITO"
-
-class MovimentacaoBancaria(AuditableBase):
-    __tablename__ = 'movimentacoes_bancarias'
-    execucao_id = Column(String(36), ForeignKey('execucoes_pipeline.id'), nullable=True) # Vinculo com a execução que importou
-    extrato_id = Column(UUID(as_uuid=True), ForeignKey('extratos_bancarios.id'))
-    data = Column(Date, index=True)
-    historico = Column(String)
-    descricao_original = Column(String)
-    valor = Column(Numeric(15, 2))
-    tipo = Column(Enum(TipoMovimentacao))
-    codigo_cp = Column(String, index=True) # External ID from Inter
-    linha_origem = Column(Integer)
-
-class Despesa(AuditableBase):
-    __tablename__ = 'despesas'
-    execucao_id = Column(String(36), ForeignKey('execucoes_pipeline.id'), nullable=True) # Vinculo com a execução que importou
-    fornecedor_id = Column(UUID(as_uuid=True), ForeignKey('fornecedores.id'))
-    projeto_id = Column(UUID(as_uuid=True), ForeignKey('projetos.id'), nullable=True)
-    categoria_id = Column(UUID(as_uuid=True), ForeignKey('categorias_financeiras.id'), nullable=True)
-    valor_total = Column(Numeric(15, 2))
-    data_emissao = Column(Date)
-    id_uuid_origem = Column(String, index=True) # External ID
-
-    fornecedor = relationship("Fornecedor")
-    parcelas = relationship("ParcelaDespesa", back_populates="despesa")
-
-class ParcelaDespesa(AuditableBase):
-    __tablename__ = 'parcelas_despesa'
-    despesa_id = Column(UUID(as_uuid=True), ForeignKey('despesas.id'))
-    numero_parcela = Column(Integer)
-    valor = Column(Numeric(15, 2))
-    data_vencimento = Column(Date)
-    data_pagamento_esperada = Column(Date, nullable=True)
-    id_parcela_origem = Column(String, index=True) # External ID
-
-    despesa = relationship("Despesa", back_populates="parcelas")
-    pagamentos = relationship("Pagamento", back_populates="parcela")
-
-class Pagamento(AuditableBase):
-    __tablename__ = 'pagamentos'
-    parcela_id = Column(UUID(as_uuid=True), ForeignKey('parcelas_despesa.id'))
-    movimentacao_id = Column(UUID(as_uuid=True), ForeignKey('movimentacoes_bancarias.id'), nullable=True)
-    valor_pago = Column(Numeric(15, 2))
-    juros = Column(Numeric(15, 2), default=0)
-    desconto = Column(Numeric(15, 2), default=0)
-    data_pagamento = Column(Date)
-
-    parcela = relationship("ParcelaDespesa", back_populates="pagamentos")
-    movimentacao = relationship("MovimentacaoBancaria")
-
-class DocumentoFiscal(AuditableBase):
-    __tablename__ = 'documentos_fiscais'
-    parcela_id = Column(UUID(as_uuid=True), ForeignKey('parcelas_despesa.id'))
-    numero_nf = Column(String)
-    chave_acesso = Column(String)
-    valor_nf = Column(Numeric(15, 2))
-
-class LancamentoContabil(AuditableBase):
-    __tablename__ = 'lancamentos_contabeis'
-    execucao_id = Column(String(36), ForeignKey('execucoes_pipeline.id'), nullable=True) # Vinculo com a execução que importou
-    conta_contabil_id = Column(UUID(as_uuid=True), ForeignKey('contas_contabeis.id'))
-    data = Column(Date, index=True)
-    historico = Column(String)
-    valor = Column(Numeric(15, 2))
-    tipo = Column(Enum(TipoMovimentacao))
-    lote = Column(String)
-    chave_origem_sci = Column(String, index=True) # External ID
-    conta_contrapartida = Column(String)
-    
-    conta_contabil = relationship("ContaContabil")
-
 class TipoArquivo(str, enum.Enum):
     DESPESA = "DESPESA"
     EXTRATO = "EXTRATO"
@@ -257,15 +175,15 @@ class ConciliacaoItem(AuditableBase):
     conciliacao_id = Column(String(36), ForeignKey("conciliacoes.id"), nullable=False)
     
     # Entidades vinculadas (todas opcionais, pois depende do lado do match)
-    parcela_id = Column(UUID(as_uuid=True), ForeignKey("parcelas_despesa.id"), nullable=True)
-    movimentacao_id = Column(UUID(as_uuid=True), ForeignKey("movimentacoes_bancarias.id"), nullable=True)
-    lancamento_id = Column(UUID(as_uuid=True), ForeignKey("lancamentos_contabeis.id"), nullable=True)
+    titulo_id = Column(String(36), ForeignKey("titulos_financeiros.id"), nullable=True)
+    movimentacao_financeira_id = Column(String(36), ForeignKey("movimentacoes_financeiras.id"), nullable=True)
+    lancamento_cabecalho_id = Column(String(36), ForeignKey("lancamentos_cabecalhos.id"), nullable=True)
 
     # Relacionamentos
     conciliacao = relationship("Conciliacao", back_populates="itens")
-    parcela = relationship("ParcelaDespesa")
-    movimentacao = relationship("MovimentacaoBancaria")
-    lancamento = relationship("LancamentoContabil")
+    titulo = relationship("TituloFinanceiro")
+    movimentacao_financeira = relationship("MovimentacaoFinanceira")
+    lancamento = relationship("LancamentoCabecalho")
 
 class ConciliacaoExplicacao(AuditableBase):
     __tablename__ = "conciliacao_explicacoes"
@@ -293,9 +211,9 @@ class CandidateEvaluationLog(AuditableBase):
     __tablename__ = "candidate_evaluation_logs"
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     execucao_id = Column(String(36), ForeignKey("execucoes_pipeline.id"), nullable=False)
-    movimentacao_id = Column(UUID(as_uuid=True), ForeignKey('movimentacoes_bancarias.id'), nullable=False)
-    parcela_id = Column(UUID(as_uuid=True), ForeignKey('parcelas_despesa.id'), nullable=True)
-    lancamento_id = Column(UUID(as_uuid=True), ForeignKey('lancamentos_contabeis.id'), nullable=True)
+    movimentacao_financeira_id = Column(String(36), ForeignKey('movimentacoes_financeiras.id'), nullable=False)
+    titulo_id = Column(String(36), ForeignKey('titulos_financeiros.id'), nullable=True)
+    lancamento_cabecalho_id = Column(String(36), ForeignKey('lancamentos_cabecalhos.id'), nullable=True)
     regra = Column(String(100), nullable=False)
     motivo_descarte = Column(Text, nullable=False)
     
@@ -304,9 +222,9 @@ class MatchCandidate(AuditableBase):
     __tablename__ = "match_candidates"
     id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     execucao_id = Column(String(36), ForeignKey("execucoes_pipeline.id"), nullable=False)
-    movimentacao_id = Column(UUID(as_uuid=True), ForeignKey('movimentacoes_bancarias.id'), nullable=False)
-    parcela_id = Column(UUID(as_uuid=True), ForeignKey('parcelas_despesa.id'), nullable=True)
-    lancamento_id = Column(UUID(as_uuid=True), ForeignKey('lancamentos_contabeis.id'), nullable=True)
+    movimentacao_financeira_id = Column(String(36), ForeignKey('movimentacoes_financeiras.id'), nullable=False)
+    titulo_id = Column(String(36), ForeignKey('titulos_financeiros.id'), nullable=True)
+    lancamento_cabecalho_id = Column(String(36), ForeignKey('lancamentos_cabecalhos.id'), nullable=True)
     
     score_total = Column(Float, nullable=False)
     status = Column(Enum(StatusCandidato), nullable=False)
@@ -321,9 +239,9 @@ class MatchCandidate(AuditableBase):
     decision_comment = Column(Text, nullable=True)
     
     execucao = relationship("ExecucaoPipeline")
-    movimentacao = relationship("MovimentacaoBancaria")
-    parcela = relationship("ParcelaDespesa")
-    lancamento = relationship("LancamentoContabil")
+    movimentacao = relationship("MovimentacaoFinanceira")
+    titulo = relationship("TituloFinanceiro")
+    lancamento = relationship("LancamentoCabecalho")
     revisor = relationship("Usuario")
 
 class TipoContaFinanceira(str, enum.Enum):

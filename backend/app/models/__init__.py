@@ -1,6 +1,6 @@
 from .base import Base, AuditableBase
 
-# ── Módulo legado (mantido para compatibilidade) ──────────────────────────────
+# ── Núcleo ativo de domain.py ─────────────────────────────────────────────────
 from .domain import (
     Empresa,
     ContaBancaria,
@@ -8,16 +8,11 @@ from .domain import (
     Fornecedor,
     Projeto,
     CategoriaFinanceira,
-    ExtratoBancario,
-    MovimentacaoBancaria,
-    Despesa,
-    ParcelaDespesa,
-    DocumentoFiscal,        # legado (documentos_fiscais) – manter para MV existente
-    LancamentoContabil,     # legado – manter
+    ClientSchemaMapping,
     ImportacaoArquivo,
     Conciliacao,
-    Pagamento,
     ConciliacaoItem,
+    ConciliacaoExplicacao,
     ExecucaoPipeline,
     StatusExecucao,
     StagingRegistro,
@@ -25,6 +20,15 @@ from .domain import (
     TipoArquivo,
     Role,
     Usuario,
+    WorkspaceMember,
+    StatusConciliacao,
+    TipoMatch,
+    MatchCandidate,
+    StatusCandidato,
+    CandidateEvaluationLog,
+    ContaFinanceira,
+    TipoContaFinanceira,
+    Receita,
 )
 
 # ── Sprint 1: Módulos TO-BE ────────────────────────────────────────────────────
@@ -67,13 +71,15 @@ from .fiscal import ApuracaoFiscal, DetalheImposto, TipoImposto
 __all__ = [
     # Base
     "Base", "AuditableBase",
-    # Legado
+    # Domain Core
     "Empresa", "ContaBancaria", "ContaContabil", "Fornecedor", "Projeto",
-    "CategoriaFinanceira", "ExtratoBancario", "MovimentacaoBancaria",
-    "Despesa", "ParcelaDespesa", "DocumentoFiscal", "LancamentoContabil",
-    "ImportacaoArquivo", "Conciliacao", "Pagamento", "ConciliacaoItem",
+    "CategoriaFinanceira", "ClientSchemaMapping",
+    "ImportacaoArquivo", "Conciliacao", "ConciliacaoItem", "ConciliacaoExplicacao",
     "ExecucaoPipeline", "StatusExecucao", "StagingRegistro", "TipoStaging",
-    "TipoArquivo", "Role", "Usuario",
+    "TipoArquivo", "Role", "Usuario", "WorkspaceMember",
+    "StatusConciliacao", "TipoMatch",
+    "MatchCandidate", "StatusCandidato", "CandidateEvaluationLog",
+    "ContaFinanceira", "TipoContaFinanceira", "Receita",
     # Novos
     "EmpresaFiscal", "RegimeTributario",
     "Obra", "Subempreiteiro", "RegimeTributarioObra", "StatusObra", "TipoObra",

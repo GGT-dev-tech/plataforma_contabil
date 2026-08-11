@@ -3,7 +3,8 @@ from decimal import Decimal
 from typing import Optional
 from dataclasses import dataclass
 from datetime import date, timedelta
-from app.models.domain import MovimentacaoBancaria, ParcelaDespesa, LancamentoContabil
+from app.models.financeiro import MovimentacaoFinanceira, TituloFinanceiro
+from app.models.ledger import LancamentoCabecalho
 import difflib
 
 @dataclass
@@ -23,7 +24,7 @@ class IMatchingRule(ABC):
     def weight(self) -> float: pass
 
     @abstractmethod
-    def evaluate(self, parcela: Optional[ParcelaDespesa], mov: MovimentacaoBancaria, lanc: Optional[LancamentoContabil]) -> RuleResult:
+    def evaluate(self, titulo: Optional[TituloFinanceiro], mov: MovimentacaoFinanceira, lanc: Optional[LancamentoCabecalho]) -> RuleResult:
         pass
 
 class ValueRule(IMatchingRule):
@@ -37,9 +38,9 @@ class ValueRule(IMatchingRule):
     @property
     def weight(self) -> float: return self._weight
 
-    def evaluate(self, parcela: Optional[ParcelaDespesa], mov: MovimentacaoBancaria, lanc: Optional[LancamentoContabil]) -> RuleResult:
+    def evaluate(self, titulo: Optional[TituloFinanceiro], mov: MovimentacaoFinanceira, lanc: Optional[LancamentoCabecalho]) -> RuleResult:
         # Pega valor da parcela ou lancamento
-        target_val = abs(parcela.valor) if parcela else (abs(lanc.valor) if lanc else Decimal('0.0'))
+        target_val = abs(titulo.valor_nominal) if titulo else (abs(lanc.partidas[0].valor) if lanc and lanc.partidas else Decimal('0.0'))
         mov_val = abs(mov.valor)
         
         diff = abs(target_val - mov_val)
@@ -63,11 +64,12 @@ class LancamentoValueRule(IMatchingRule):
     @property
     def weight(self) -> float: return self._weight
 
-    def evaluate(self, parcela: Optional[ParcelaDespesa], mov: MovimentacaoBancaria, lanc: Optional[LancamentoContabil]) -> RuleResult:
-        if not lanc:
+    def evaluate(self, titulo: Optional[TituloFinanceiro], mov: MovimentacaoFinanceira, lanc: Optional[LancamentoCabecalho]) -> RuleResult:
+        if not lanc or not lanc.partidas:
             return RuleResult(score=0.0, confidence=0.0, weight=self.weight, reason="Sem lancamento")
         
-        diff = abs(abs(lanc.valor) - abs(mov.valor))
+        lanc_val = abs(lanc.partidas[0].valor)
+        diff = abs(lanc_val - abs(mov.valor))
         if diff == 0:
             return RuleResult(score=100.0, confidence=1.0, weight=self.weight, reason="Match exato de valor lancamento")
         
@@ -85,12 +87,12 @@ class DateRule(IMatchingRule):
     @property
     def weight(self) -> float: return self._weight
 
-    def evaluate(self, parcela: Optional[ParcelaDespesa], mov: MovimentacaoBancaria, lanc: Optional[LancamentoContabil]) -> RuleResult:
-        target_date = parcela.data_vencimento if parcela else (lanc.data if lanc else None)
-        if not target_date or not mov.data:
+    def evaluate(self, titulo: Optional[TituloFinanceiro], mov: MovimentacaoFinanceira, lanc: Optional[LancamentoCabecalho]) -> RuleResult:
+        target_date = titulo.data_vencimento if titulo else (lanc.data_competencia if lanc else None)
+        if not target_date or not mov.data_transacao:
             return RuleResult(score=0.0, confidence=0.0, weight=self.weight, reason="Data ausente")
             
-        diff = abs((target_date - mov.data).days)
+        diff = abs((target_date - mov.data_transacao).days)
         
         if diff == 0:
             return RuleResult(score=100.0, confidence=1.0, weight=self.weight, reason="Datas coincidem")
@@ -110,11 +112,11 @@ class LancamentoDateRule(IMatchingRule):
     @property
     def weight(self) -> float: return self._weight
 
-    def evaluate(self, parcela: Optional[ParcelaDespesa], mov: MovimentacaoBancaria, lanc: Optional[LancamentoContabil]) -> RuleResult:
-        if not lanc or not lanc.data or not mov.data:
+    def evaluate(self, titulo: Optional[TituloFinanceiro], mov: MovimentacaoFinanceira, lanc: Optional[LancamentoCabecalho]) -> RuleResult:
+        if not lanc or not lanc.data_competencia or not mov.data_transacao:
             return RuleResult(score=0.0, confidence=0.0, weight=self.weight, reason="Data ausente")
         
-        diff = abs((lanc.data - mov.data).days)
+        diff = abs((lanc.data_competencia - mov.data_transacao).days)
         if diff <= 1:
             return RuleResult(score=100.0, confidence=0.9, weight=self.weight, reason="Data lancamento próxima")
         
@@ -131,9 +133,9 @@ class FornecedorNameRule(IMatchingRule):
     @property
     def weight(self) -> float: return self._weight
 
-    def evaluate(self, parcela: Optional[ParcelaDespesa], mov: MovimentacaoBancaria, lanc: Optional[LancamentoContabil]) -> RuleResult:
-        s1 = (parcela.fornecedor.nome if parcela and parcela.fornecedor else "").lower().strip()
-        s2 = (mov.descricao or "").lower().strip()
+    def evaluate(self, titulo: Optional[TituloFinanceiro], mov: MovimentacaoFinanceira, lanc: Optional[LancamentoCabecalho]) -> RuleResult:
+        s1 = (titulo.fornecedor_cliente_nome if titulo and titulo.fornecedor_cliente_nome else "").lower().strip()
+        s2 = (mov.descricao_extrato or "").lower().strip()
         
         if not s1 or not s2:
             return RuleResult(score=0.0, confidence=0.0, weight=self.weight, reason="Sem nomes para comparar")
@@ -157,11 +159,11 @@ class PixRule(IMatchingRule):
     @property
     def weight(self) -> float: return self._weight
 
-    def evaluate(self, parcela: Optional[ParcelaDespesa], mov: MovimentacaoBancaria, lanc: Optional[LancamentoContabil]) -> RuleResult:
+    def evaluate(self, titulo: Optional[TituloFinanceiro], mov: MovimentacaoFinanceira, lanc: Optional[LancamentoCabecalho]) -> RuleResult:
         # Somente avalia se houver extracao de PIX ou features táticas no Staging
         # features do enrichment
         mov_f = getattr(mov, '_features', None)
-        parc_f = getattr(parcela, '_features', None) if parcela else None
+        parc_f = getattr(titulo, '_features', None) if titulo else None
         
         if not mov_f or not parc_f:
             return RuleResult(score=0.0, confidence=0.0, weight=self.weight, reason="Sem features de enrichment para PIX")

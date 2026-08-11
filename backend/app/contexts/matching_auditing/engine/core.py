@@ -8,12 +8,13 @@ from sqlalchemy.orm import Session
 from datetime import datetime
 
 from app.models.domain import (
-    MovimentacaoBancaria, ParcelaDespesa, LancamentoContabil, 
     Conciliacao, ConciliacaoItem, ConciliacaoExplicacao,
     StatusConciliacao, TipoMatch,
     ExecucaoPipeline, StatusExecucao,
     MatchCandidate, StatusCandidato, CandidateEvaluationLog
 )
+from app.models.financeiro import MovimentacaoFinanceira, TituloFinanceiro
+from app.models.ledger import LancamentoCabecalho
 from app.contexts.matching_auditing.engine.rules import IMatchingRule, RuleResult
 
 def load_matching_profile():
@@ -36,50 +37,50 @@ class CandidateGenerator:
 
     def get_candidates_for_movimentacao(
         self, 
-        mov: MovimentacaoBancaria, 
-        parcelas_pendentes: List[ParcelaDespesa],
-        lancamentos_pendentes: List[LancamentoContabil]
-    ) -> List[Tuple[Optional[ParcelaDespesa], Optional[LancamentoContabil], Optional[str]]]:
+        mov: MovimentacaoFinanceira, 
+        titulos_pendentes: List[TituloFinanceiro],
+        lancamentos_pendentes: List[LancamentoCabecalho]
+    ) -> List[Tuple[Optional[TituloFinanceiro], Optional[LancamentoCabecalho], Optional[str]]]:
         
-        candidatos_parcelas = []
-        for p in parcelas_pendentes:
+        candidatos_titulos = []
+        for t in titulos_pendentes:
             self.metrics["avaliados_total"] += 1
-            if not p.data_vencimento or not mov.data:
-                self.discard_log.append({"mov_id": str(mov.id), "parcela_id": str(p.id), "motivo": "Data ausente"})
+            if not t.data_vencimento or not mov.data_transacao:
+                self.discard_log.append({"mov_id": str(mov.id), "titulo_id": str(t.id), "motivo": "Data ausente"})
                 self.metrics["descartados_data"] += 1
                 continue
-            days_diff = abs((p.data_vencimento - mov.data).days)
+            days_diff = abs((t.data_vencimento - mov.data_transacao).days)
             if days_diff > 10:
-                self.discard_log.append({"mov_id": str(mov.id), "parcela_id": str(p.id), "motivo": f"Data fora da janela (+-10 dias). Diff: {days_diff}"})
+                self.discard_log.append({"mov_id": str(mov.id), "titulo_id": str(t.id), "motivo": f"Data fora da janela (+-10 dias). Diff: {days_diff}"})
                 self.metrics["descartados_data"] += 1
                 continue
-            candidatos_parcelas.append(p)
+            candidatos_titulos.append(t)
             self.metrics["aprovados_filtro"] += 1
 
         candidatos_lancamentos = []
         for l in lancamentos_pendentes:
-            if not l.data or not mov.data:
+            if not l.data_competencia or not mov.data_transacao:
                 continue
-            days_diff = abs((l.data - mov.data).days)
+            days_diff = abs((l.data_competencia - mov.data_transacao).days)
             if days_diff > 10:
                 continue
             candidatos_lancamentos.append(l)
 
-        # Se não encontrou nem parcela nem lancamento, descarte total
-        if not candidatos_parcelas and not candidatos_lancamentos:
-            return [(None, None, "Sem candidatos (parcela ou lançamento) no raio de 10 dias.")]
+        # Se não encontrou nem titulo nem lancamento, descarte total
+        if not candidatos_titulos and not candidatos_lancamentos:
+            return [(None, None, "Sem candidatos (titulo ou lançamento) no raio de 10 dias.")]
 
         # Combinar: se tiver de ambos, cruzamos. Mas para evitar cartesiano enorme, limitamos a 10*10 = 100.
-        # Geralmente há 1-2 parcelas e 1-2 lancamentos pra mesma data.
+        # Geralmente há 1-2 titulos e 1-2 lancamentos pra mesma data.
         candidatos_finais = []
         
-        if candidatos_parcelas and candidatos_lancamentos:
-            for p in candidatos_parcelas:
+        if candidatos_titulos and candidatos_lancamentos:
+            for t in candidatos_titulos:
                 for l in candidatos_lancamentos:
-                    candidatos_finais.append((p, l, None))
-        elif candidatos_parcelas:
-            for p in candidatos_parcelas:
-                candidatos_finais.append((p, None, None))
+                    candidatos_finais.append((t, l, None))
+        elif candidatos_titulos:
+            for t in candidatos_titulos:
+                candidatos_finais.append((t, None, None))
         elif candidatos_lancamentos:
             for l in candidatos_lancamentos:
                 candidatos_finais.append((None, l, None))
@@ -91,7 +92,7 @@ class ScoringEngine:
         self.rules = rules
         self.rule_stats = {r.name: {"executada": 0, "aprovou": 0, "rejeitou": 0, "peso": r.weight, "tempo_total_ms": 0.0, "score_total": 0.0} for r in rules}
 
-    def score(self, parcela: Optional[ParcelaDespesa], mov: MovimentacaoBancaria, lanc: Optional[LancamentoContabil]) -> Tuple[float, List[RuleResult], List[IMatchingRule]]:
+    def score(self, titulo: Optional[TituloFinanceiro], mov: MovimentacaoFinanceira, lanc: Optional[LancamentoCabecalho]) -> Tuple[float, List[RuleResult], List[IMatchingRule]]:
         total_score = 0.0
         total_weight = 0.0
         details = []
@@ -100,7 +101,7 @@ class ScoringEngine:
         for rule in self.rules:
             self.rule_stats[rule.name]["executada"] += 1
             start_t = time.perf_counter()
-            result = rule.evaluate(parcela, mov, lanc)
+            result = rule.evaluate(titulo, mov, lanc)
             elapsed_ms = (time.perf_counter() - start_t) * 1000.0
             
             self.rule_stats[rule.name]["tempo_total_ms"] += elapsed_ms
@@ -152,7 +153,7 @@ class SuggestionEngine:
         self, score: float, 
         status: StatusConciliacao, 
         mov_id: Any, 
-        parcela_id: Optional[Any], 
+        titulo_id: Optional[Any], 
         lanc_id: Optional[Any],
         regras_json: List[dict]
     ) -> Conciliacao:
@@ -170,9 +171,9 @@ class SuggestionEngine:
         item = ConciliacaoItem(
             id=str(uuid.uuid4()),
             conciliacao_id=conciliacao.id,
-            parcela_id=self._to_uuid(parcela_id),
-            movimentacao_id=self._to_uuid(mov_id),
-            lancamento_id=self._to_uuid(lanc_id)
+            titulo_id=self._to_uuid(titulo_id),
+            movimentacao_financeira_id=self._to_uuid(mov_id),
+            lancamento_cabecalho_id=self._to_uuid(lanc_id)
         )
         self.db.add(item)
         
@@ -229,12 +230,11 @@ class MatchOrchestrator:
         self.start_time = time.perf_counter()
 
     def run_pipeline(self) -> Dict[str, Any]:
-        from app.models.domain import Despesa
-        movs = self.db.query(MovimentacaoBancaria).filter(MovimentacaoBancaria.execucao_id == self.execucao.id).all()
-        parcelas = self.db.query(ParcelaDespesa).join(Despesa).filter(Despesa.execucao_id == self.execucao.id).all()
-        lancamentos = self.db.query(LancamentoContabil).filter(LancamentoContabil.execucao_id == self.execucao.id).all()
+        movs = self.db.query(MovimentacaoFinanceira).filter(MovimentacaoFinanceira.conciliada == False).all()
+        titulos = self.db.query(TituloFinanceiro).filter(TituloFinanceiro.status == 'ABERTO').all()
+        lancamentos = self.db.query(LancamentoCabecalho).filter(LancamentoCabecalho.status == 'RASCUNHO').all()
         
-        conciliados_mov = self.db.query(ConciliacaoItem.movimentacao_id).all()
+        conciliados_mov = self.db.query(ConciliacaoItem.movimentacao_financeira_id).all()
         conciliados_mov_ids = {c[0] for c in conciliados_mov if c[0]}
         
         movs_pendentes = [m for m in movs if m.id not in conciliados_mov_ids]
@@ -250,7 +250,7 @@ class MatchOrchestrator:
         }
         
         for mov in movs_pendentes:
-            candidatos_avaliados = self.candidate_gen.get_candidates_for_movimentacao(mov, parcelas, lancamentos)
+            candidatos_avaliados = self.candidate_gen.get_candidates_for_movimentacao(mov, titulos, lancamentos)
             stats["candidatos_avaliados"] += len([c for c in candidatos_avaliados if c[2] is None])
             
             best_score = 0.0
@@ -259,11 +259,11 @@ class MatchOrchestrator:
             best_rules = []
             
             # Persistir descartes do generator no funil leve
-            for p, l, motivo in candidatos_avaliados:
+            for t, l, motivo in candidatos_avaliados:
                 if motivo:
                     cel = CandidateEvaluationLog(
-                        id=str(uuid.uuid4()), execucao_id=self.execucao.id, movimentacao_id=mov.id, 
-                        parcela_id=p.id if p else None, lancamento_id=l.id if l else None,
+                        id=str(uuid.uuid4()), execucao_id=self.execucao.id, movimentacao_financeira_id=mov.id, 
+                        titulo_id=t.id if t else None, lancamento_cabecalho_id=l.id if l else None,
                         motivo_descarte=motivo
                     )
                     self.db.add(cel)
@@ -272,11 +272,11 @@ class MatchOrchestrator:
             valid_candidates = [c for c in candidatos_avaliados if c[2] is None]
             candidatos_analisados = []
             
-            for p, l, _ in valid_candidates:
-                score, details, applied = self.scoring.score(p, mov, l)
+            for t, l, _ in valid_candidates:
+                score, details, applied = self.scoring.score(t, mov, l)
                 regras_json = [{"nome": r.name, "score": d.score, "peso": d.weight, "confidence": d.confidence, "justificativa": d.reason} for r, d in zip(applied, details)]
                 candidatos_analisados.append({
-                    "p": p, "l": l,
+                    "t": t, "l": l,
                     "score": score,
                     "regras_json": regras_json
                 })
@@ -289,11 +289,11 @@ class MatchOrchestrator:
 
             # Persistir os candidatos analisados pelo Scoring Engine
             for c in candidatos_analisados:
-                p, l = c["p"], c["l"]
+                t, l = c["t"], c["l"]
                 score = c["score"]
                 regras_json = c["regras_json"]
                 
-                if (p, l) == best_candidate and best_score > 0:
+                if (t, l) == best_candidate and best_score > 0:
                     status = self.decision.decide(best_score)
                     
                     if status == StatusConciliacao.APROVADO:
@@ -302,13 +302,13 @@ class MatchOrchestrator:
                         stats["matches_automaticos"] += 1
                         
                         # Criar conciliação oficial direto
-                        self.suggestion.persist_match(score, status, str(mov.id), str(p.id) if p else None, str(l.id) if l else None, regras_json)
-                        if p in parcelas: parcelas.remove(p)
+                        self.suggestion.persist_match(score, status, str(mov.id), str(t.id) if t else None, str(l.id) if l else None, regras_json)
+                        if t in titulos: titulos.remove(t)
                     elif status == StatusConciliacao.PENDENTE:
                         # Human review needed
                         mc_status = StatusCandidato.PENDENTE_REVISAO
                         stats["matches_revisao"] += 1
-                        if p in parcelas: parcelas.remove(p)
+                        if t in titulos: titulos.remove(t)
                     else:
                         mc_status = StatusCandidato.REJEITADO_PELO_MOTOR
                         motivo_descarte = f"Melhor score ({score:.2f}) não atingiu o threshold."
@@ -317,12 +317,12 @@ class MatchOrchestrator:
                     mc_status = StatusCandidato.REJEITADO_PELO_MOTOR
                     motivo_descarte = f"Score insuficiente ou menor que o vencedor ({best_score:.2f})"
                     self.candidates_discard_engine_log.append({
-                        "mov_id": str(mov.id), "parcela_id": str(p.id) if p else None, 
+                        "mov_id": str(mov.id), "titulo_id": str(t.id) if t else None, 
                         "motivo": motivo_descarte, "score": score
                     })
 
                 mc = MatchCandidate(
-                    id=str(uuid.uuid4()), execucao_id=self.execucao.id, movimentacao_id=mov.id, parcela_id=p.id if p else None, lancamento_id=l.id if l else None,
+                    id=str(uuid.uuid4()), execucao_id=self.execucao.id, movimentacao_financeira_id=mov.id, titulo_id=t.id if t else None, lancamento_cabecalho_id=l.id if l else None,
                     score_total=score, status=mc_status, motivo_descarte=motivo_descarte if mc_status == StatusCandidato.REJEITADO_PELO_MOTOR else None,
                     explanation_snapshot=json.dumps(regras_json)
                 )
@@ -331,15 +331,15 @@ class MatchOrchestrator:
                 # Mantendo LOGs compatíveis para E2E CSV
                 if mc_status in (StatusCandidato.APROVADO, StatusCandidato.PENDENTE_REVISAO):
                     self.reconciliation_log.append({
-                        "mov_id": str(mov.id), "mov_desc": mov.historico, "mov_valor": float(mov.valor),
-                        "parcela_id": str(p.id) if p else None, "lancamento_id": str(l.id) if l else None,
+                        "mov_id": str(mov.id), "mov_desc": mov.descricao_extrato, "mov_valor": float(mov.valor),
+                        "titulo_id": str(t.id) if t else None, "lancamento_id": str(l.id) if l else None,
                         "score": score, "status": "APROVADO" if mc_status == StatusCandidato.APROVADO else "PENDENTE",
                         "regras": regras_json
                     })
 
             if not best_candidate or self.decision.decide(best_score) is None:
                 stats["divergencias"] += 1
-                self.divergencias_log.append({"mov_id": str(mov.id), "historico": mov.historico, "valor": float(mov.valor), "motivo": "Sem match final"})
+                self.divergencias_log.append({"mov_id": str(mov.id), "historico": mov.descricao_extrato, "valor": float(mov.valor), "motivo": "Sem match final"})
                 
         # Finalizar Execução
         self.execucao.status = StatusExecucao.CONCLUIDA

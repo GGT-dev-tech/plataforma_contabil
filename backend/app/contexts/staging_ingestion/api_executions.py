@@ -1,7 +1,7 @@
 import uuid
 import json
 import hashlib
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.orm import Session
 from app.api import schemas
 from app.contexts.identity.auth_utils import get_current_user

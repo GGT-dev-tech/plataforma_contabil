@@ -1,7 +1,8 @@
 import logging
+import uuid
 import pandas as pd
 from sqlalchemy.orm import Session
-from app.models.domain import TipoArquivo, LancamentoContabil, TipoMovimentacao
+from app.models.domain import TipoArquivo, StagingRegistro, TipoStaging
 from app.contexts.staging_ingestion.parsers.base import ImportAdapter
 
 logger = logging.getLogger(__name__)
@@ -65,27 +66,29 @@ class RazaoSucessorAdapter(ImportAdapter):
             val_cred = self._parse_float(cred_str)
             
             valor = 0.0
-            tipo = None
+            tipo_staging = TipoStaging.EXTRATO
             if val_debito > 0:
-                valor = val_debito
-                tipo = TipoMovimentacao.D
+                valor = val_debito  # Débito: saída
             elif val_cred > 0:
-                valor = val_cred
-                tipo = TipoMovimentacao.C
+                valor = val_cred   # Crédito: entrada
                 
             if valor == 0.0:
                 continue
             
-            lanc = LancamentoContabil(
+            # Migramos o Razão Contábil para o Staging para revisão humana e posterrior 
+            # geração de LancamentoCabecalho via Motor Contábil no LedgerController.
+            stag = StagingRegistro(
+                id=str(uuid.uuid4()),
                 execucao_id=execucao_id,
+                tipo=tipo_staging,
                 data=current_date,
-                historico=historico,
+                descricao=historico,
                 valor=valor,
-                tipo=tipo,
-                chave_origem_sci=chave_origem,
-                conta_contrapartida=contra
+                conta_origem=chave_origem,
+                conta_destino=contra,
+                processado=False
             )
-            db_session.add(lanc)
+            db_session.add(stag)
             novos_lancamentos += 1
             
         db_session.commit()

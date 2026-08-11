@@ -1,7 +1,5 @@
 import abc
 import logging
-from fastapi import BackgroundTasks
-import traceback
 from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
@@ -11,22 +9,6 @@ class PipelineRunner(abc.ABC):
     def run(self, execucao_id: str):
         """Inicia o processamento do pipeline (pode ser síncrono ou assíncrono dependendo da implementação)"""
         pass
-
-class SyncRunner(PipelineRunner):
-    """MVP: Roda no BackgroundTasks do FastAPI. Futuro: CeleryRunner"""
-    def __init__(self, background_tasks: BackgroundTasks, db_session: Session):
-        self.background_tasks = background_tasks
-        self.db = db_session
-        
-    def run(self, execucao_id: str):
-        def _bg_task():
-            from app.api.deps import SessionLocal
-            db = SessionLocal()
-            try:
-                execute_pipeline_core(execucao_id, db)
-            finally:
-                db.close()
-        self.background_tasks.add_task(_bg_task)
 
 class CeleryRunner(PipelineRunner):
     """Executa no Celery + Redis (Assíncrono e Resiliente)"""
@@ -73,7 +55,8 @@ def execute_pipeline_core(execucao_id: str, db: Session):
                 
                 # 2.1 Processar Staging para o Domínio
                 from app.contexts.staging_ingestion.service import StagingService
-                from app.models.domain import StagingRegistro, MovimentacaoBancaria, ParcelaDespesa, Fornecedor
+                from app.models.domain import StagingRegistro
+                from app.models.financeiro import MovimentacaoFinanceira, TituloFinanceiro
                 
                 staging_items = db.query(StagingRegistro).filter(
                     StagingRegistro.execucao_id == execucao_id, 
@@ -88,14 +71,16 @@ def execute_pipeline_core(execucao_id: str, db: Session):
                 
                 # 2.2 Enriquecimento
                 from app.services.enrichment import EnrichmentService
-                movs = db.query(MovimentacaoBancaria).filter_by(execucao_id=execucao_id).all()
-                parcelas = db.query(ParcelaDespesa).all()
-                fornecedores = {f.id: f for f in db.query(Fornecedor).all()}
-                
-                EnrichmentService.enrich_movimentacoes(movs)
-                EnrichmentService.enrich_parcelas(parcelas, fornecedores)
-                db.commit()
-                logger.info("Enriquecimento de dados concluído.")
+                execucao_obj = db.query(ExecucaoPipeline).filter(ExecucaoPipeline.id == execucao_id).first()
+                empresa_id = execucao_obj.empresa_id if execucao_obj else None
+                if empresa_id:
+                    movs = db.query(MovimentacaoFinanceira).filter(MovimentacaoFinanceira.empresa_id == empresa_id, MovimentacaoFinanceira.conciliada == False).all()
+                    titulos = db.query(TituloFinanceiro).filter(TituloFinanceiro.empresa_id == empresa_id).all()
+                    
+                    EnrichmentService.enrich_movimentacoes(movs)
+                    EnrichmentService.enrich_titulos(titulos)
+                    db.commit()
+                    logger.info("Enriquecimento de dados concluído.")
                 
                 # 2.3 Matching Engine
                 orchestrator = MatchOrchestrator(db, execucao_id=execucao_id)

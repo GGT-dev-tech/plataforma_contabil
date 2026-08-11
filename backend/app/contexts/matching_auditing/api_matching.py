@@ -9,7 +9,9 @@ from sqlalchemy.orm import Session, joinedload
 from app.api import schemas
 from app.contexts.identity.auth_utils import get_current_user
 from app.api.deps import get_db
-from app.models.domain import Usuario, Role, MatchCandidate, MovimentacaoBancaria, ParcelaDespesa, LancamentoContabil, StatusCandidato, StatusConciliacao, ExecucaoPipeline
+from app.models.domain import Usuario, Role, MatchCandidate, StatusCandidato, StatusConciliacao, ExecucaoPipeline
+from app.models.financeiro import MovimentacaoFinanceira, TituloFinanceiro
+from app.models.ledger import LancamentoCabecalho
 from app.core.uow import SQLAlchemyUnitOfWork
 from app.contexts.matching_auditing.engine.core import SuggestionEngine, load_matching_profile
 
@@ -29,17 +31,17 @@ def execution_candidates(exec_id: str, status: str = "PENDENTE_REVISAO", db: Ses
         _enforce_tenant_access(uow, exec_id, current_user)
         candidatos = uow.executions.get_candidates(uow.session, exec_id, status)
         
-        mov_ids = [c.movimentacao_id for c in candidatos if c.movimentacao_id]
-        par_ids = [c.parcela_id for c in candidatos if c.parcela_id]
-        lanc_ids = [c.lancamento_id for c in candidatos if c.lancamento_id]
+        mov_ids = [c.movimentacao_financeira_id for c in candidatos if c.movimentacao_financeira_id]
+        titulo_ids = [c.titulo_id for c in candidatos if c.titulo_id]
+        lanc_ids = [c.lancamento_cabecalho_id for c in candidatos if c.lancamento_cabecalho_id]
         
-        movs = uow.session.query(MovimentacaoBancaria).filter(MovimentacaoBancaria.id.in_(mov_ids)).all() if mov_ids else []
-        pars = uow.session.query(ParcelaDespesa).options(joinedload(ParcelaDespesa.fornecedor)).filter(ParcelaDespesa.id.in_(par_ids)).all() if par_ids else []
-        lancs = uow.session.query(LancamentoContabil).filter(LancamentoContabil.id.in_(lanc_ids)).all() if lanc_ids else []
+        movs = uow.session.query(MovimentacaoFinanceira).filter(MovimentacaoFinanceira.id.in_(mov_ids)).all() if mov_ids else []
+        titulos = uow.session.query(TituloFinanceiro).filter(TituloFinanceiro.id.in_(titulo_ids)).all() if titulo_ids else []
+        lancs = uow.session.query(LancamentoCabecalho).options(joinedload(LancamentoCabecalho.partidas)).filter(LancamentoCabecalho.id.in_(lanc_ids)).all() if lanc_ids else []
         
-        mov_map = {m.id: m for m in movs}
-        par_map = {p.id: p for p in pars}
-        lanc_map = {l.id: l for l in lancs}
+        mov_map = {str(m.id): m for m in movs}
+        titulo_map = {str(t.id): t for t in titulos}
+        lanc_map = {str(l.id): l for l in lancs}
         
         results = []
         for c in candidatos:
@@ -47,13 +49,26 @@ def execution_candidates(exec_id: str, status: str = "PENDENTE_REVISAO", db: Ses
             if '_sa_instance_state' in c_dict: del c_dict['_sa_instance_state']
             c_dict['regras'] = json.loads(c.explanation_snapshot) if getattr(c, 'explanation_snapshot', None) else []
             
-            mov = mov_map.get(c.movimentacao_id)
-            par = par_map.get(c.parcela_id)
-            lanc = lanc_map.get(c.lancamento_id)
+            mov = mov_map.get(str(c.movimentacao_financeira_id))
+            titulo = titulo_map.get(str(c.titulo_id))
+            lanc = lanc_map.get(str(c.lancamento_cabecalho_id))
             
-            c_dict['movimentacao_original'] = {"historico": mov.historico if mov else "", "valor": str(mov.valor) if mov else "0.0", "data": mov.data.isoformat() if mov and mov.data else None} if mov else None
-            c_dict['parcela_original'] = {"documento": par.documento_relacionado if par else "", "fornecedor": par.fornecedor.nome_normalizado if par and par.fornecedor else "", "valor": str(par.valor) if par else "0.0", "data_vencimento": par.data_vencimento.isoformat() if par and par.data_vencimento else None} if par else None
-            c_dict['lancamento_original'] = {"historico": lanc.historico if lanc else "", "chave": lanc.chave if lanc else "", "debito": str(lanc.valor_debito) if lanc else "0.0", "credito": str(lanc.valor_credito) if lanc else "0.0"} if lanc else None
+            c_dict['transacao_original'] = {
+                "historico": mov.descricao_extrato if mov else "",
+                "valor": str(mov.valor) if mov else "0.0",
+                "data": mov.data_transacao.isoformat() if mov and mov.data_transacao else None
+            } if mov else None
+            c_dict['titulo_original'] = {
+                "descricao": titulo.descricao if titulo else "",
+                "fornecedor": titulo.fornecedor_cliente_nome if titulo else "",
+                "valor": str(titulo.valor_nominal) if titulo else "0.0",
+                "data_vencimento": titulo.data_vencimento.isoformat() if titulo and titulo.data_vencimento else None
+            } if titulo else None
+            c_dict['lancamento_original'] = {
+                "historico": lanc.historico_padrao if lanc else "",
+                "numero_lote": lanc.numero_lote if lanc else "",
+                "total_partidas": len(lanc.partidas) if lanc else 0
+            } if lanc else None
             results.append(c_dict)
         return results
 
@@ -65,8 +80,8 @@ def execution_conciliations(exec_id: str, db: Session = Depends(get_db), current
         results = []
         for item in itens:
             c = item.conciliacao
-            mov = item.movimentacao
-            par = item.parcela
+            mov = item.movimentacao_financeira
+            titulo = item.titulo
             lanc = item.lancamento
             results.append({
                 "conciliacao_id": c.id,
@@ -74,9 +89,20 @@ def execution_conciliations(exec_id: str, db: Session = Depends(get_db), current
                 "aprovado_por": c.aprovado_por,
                 "data_conciliacao": c.data_criacao.isoformat() if c.data_criacao else None,
                 "score": c.score_match,
-                "movimentacao": {"historico": mov.historico if mov else "", "valor": str(mov.valor) if mov else "0.0", "data": mov.data.isoformat() if mov and mov.data else None} if mov else None,
-                "parcela": {"documento": par.documento_relacionado if par else "", "fornecedor": par.fornecedor.nome_normalizado if par and par.fornecedor else "", "valor": str(par.valor) if par else "0.0"} if par else None,
-                "lancamento": {"historico": lanc.historico if lanc else "", "chave": lanc.chave if lanc else "", "debito": str(lanc.valor_debito) if lanc else "0.0", "credito": str(lanc.valor_credito) if lanc else "0.0"} if lanc else None
+                "transacao": {
+                    "historico": mov.descricao_extrato if mov else "",
+                    "valor": str(mov.valor) if mov else "0.0",
+                    "data": mov.data_transacao.isoformat() if mov and mov.data_transacao else None
+                } if mov else None,
+                "titulo": {
+                    "descricao": titulo.descricao if titulo else "",
+                    "fornecedor": titulo.fornecedor_cliente_nome if titulo else "",
+                    "valor": str(titulo.valor_nominal) if titulo else "0.0"
+                } if titulo else None,
+                "lancamento": {
+                    "historico": lanc.historico_padrao if lanc else "",
+                    "numero_lote": lanc.numero_lote if lanc else ""
+                } if lanc else None
             })
         return results
 
@@ -87,7 +113,7 @@ def execution_divergencies(exec_id: str, db: Session = Depends(get_db), current_
         movs = uow.executions.get_divergencies(uow.session, exec_id)
         results = []
         for m in movs:
-            results.append({"mov_id": m.id, "historico": m.historico, "valor": m.valor, "data_ocorrencia": m.data, "motivo": "Nenhum candidato atingiu score."})
+            results.append({"mov_id": m.id, "historico": m.descricao_extrato, "valor": m.valor, "data_ocorrencia": m.data_transacao, "motivo": "Nenhum candidato atingiu score."})
         return results
 
 @router.get("/{exec_id}/logs")
@@ -123,25 +149,28 @@ def execution_logs(exec_id: str, db: Session = Depends(get_db), current_user: Us
 def export_accounting_entries(exec_id: str, db: Session = Depends(get_db), current_user: Usuario = Depends(get_current_user)):
     with SQLAlchemyUnitOfWork(db) as uow:
         _enforce_tenant_access(uow, exec_id, current_user)
-        lancamentos = uow.session.query(LancamentoContabil).filter(LancamentoContabil.execucao_id == exec_id).all()
+        lancamentos = uow.session.query(LancamentoCabecalho).filter(
+            LancamentoCabecalho.empresa_id == current_user.empresa_id
+        ).options(joinedload(LancamentoCabecalho.partidas)).all()
         
         output = io.StringIO()
         writer = csv.writer(output, delimiter=';')
         
-        # Cabeçalho padrão (ex: Domínio / ERP Genérico)
+        # Cabeçalho padrão
         writer.writerow(["DATA", "CONTA_DEBITO", "CONTA_CREDITO", "VALOR", "HISTORICO", "LOTE"])
         
         for lanc in lancamentos:
-            conta_deb = lanc.conta_contrapartida if lanc.tipo.name == "D" else ""
-            conta_cred = lanc.conta_contrapartida if lanc.tipo.name == "C" else ""
-            writer.writerow([
-                lanc.data.strftime("%d/%m/%Y") if lanc.data else "",
-                conta_deb,
-                conta_cred,
-                f"{lanc.valor:.2f}".replace('.', ','),
-                lanc.historico,
-                lanc.lote
-            ])
+            for partida in lanc.partidas:
+                conta_deb = str(partida.conta_contabil_id) if partida.natureza.value == "D" else ""
+                conta_cred = str(partida.conta_contabil_id) if partida.natureza.value == "C" else ""
+                writer.writerow([
+                    lanc.data_competencia.strftime("%d/%m/%Y") if lanc.data_competencia else "",
+                    conta_deb,
+                    conta_cred,
+                    f"{partida.valor:.2f}".replace('.', ','),
+                    lanc.historico_padrao,
+                    lanc.numero_lote
+                ])
             
         output.seek(0)
         
@@ -179,9 +208,9 @@ def review_candidate(id: str, decision: schemas.DecisionRequest, db: Session = D
             engine.persist_match(
                 score=cand.score_total, 
                 status=StatusConciliacao.APROVADO, 
-                mov_id=str(cand.movimentacao_id), 
-                parcela_id=str(cand.parcela_id) if cand.parcela_id else None, 
-                lanc_id=str(cand.lancamento_id) if cand.lancamento_id else None, 
+                mov_id=str(cand.movimentacao_financeira_id), 
+                titulo_id=str(cand.titulo_id) if cand.titulo_id else None, 
+                lanc_id=str(cand.lancamento_cabecalho_id) if cand.lancamento_cabecalho_id else None, 
                 regras_json=json.loads(cand.explanation_snapshot) if cand.explanation_snapshot else []
             )
         elif decision.action == "REJEITAR":

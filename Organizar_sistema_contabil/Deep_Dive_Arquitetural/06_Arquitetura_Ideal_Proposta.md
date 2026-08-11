@@ -21,6 +21,7 @@ Para suportar o crescimento da Plataforma Contábil com máxima manutenibilidade
 ## 2. O Contraste Arquitetural (Atual vs. Proposto)
 
 ### 2.1 Arquitetura Atual (O "Controlador Gordo")
+
 A arquitetura atual possui uma dependência linear e forte entre as camadas mais periféricas e o banco de dados.
 
 ```plantuml
@@ -54,6 +55,7 @@ note right of Controller: 1. Valida Permissão\n2. Regra de Negócio\n3. Trata T
 ```
 
 ### 2.2 Arquitetura Proposta (Clean Architecture + CQRS + Event Driven)
+
 Na nova estrutura, o **Domínio** está no centro e não depende de ninguém. Os fluxos são encapsulados em *Use Cases* (Application Services) via Command/Query Handlers.
 
 ```plantuml
@@ -100,25 +102,31 @@ note right of DomainEntities: Sem imports do SQLAlchemy!
 ## 3. O Que Mudaria na Prática?
 
 ### 1. Separação por Vertical Slices (Módulos Coesos)
+
 **Antes:** `app/models`, `app/api`, `app/services`.
 **Depois:** `app/modules/fiscal/`, `app/modules/financeiro/`. Tudo relacionado à apuração fiscal (Controller, Schema, Repository, Entity, Tests) mora no mesmo lugar. Aumenta absurdamente a coesão.
 
 ### 2. Segurança Multi-Tenant Embutida (Row-Level Security/Contexto)
+
 **Antes:** O Dev precisava escrever `if str(doc.empresa_id) != user.empresa_id:` em toda rota.
 **Depois:** Cria-se um `MultiTenantUnitOfWork` ou um `BaseRepository` que intercepta o ContextVar do ID do Tenant (já existe o middleware na base atual) e **automaticamente injeta o filtro** em toda e qualquer query gerada. O desenvolvedor não precisa mais se preocupar; o vazamento torna-se matematicamente impossível.
 
 ### 3. Fim do `.all()` (Query Handlers Otimizados)
+
 **Antes:** `GET /dre-gerencial` buscava `titulos = query.all()` pro Python somar.
 **Depois:** Uma classe `GetDreGerencialQueryHandler` utiliza SQL raw puro, ou Dapper/SQLAlchemy Core para compilar uma `SELECT SUM(valor) GROUP BY ...`. Isso devolve o número consolidado no banco. Redução de 99% na alocação de memória (RAM).
 
 ### 4. Controle de Efeitos Colaterais via Event Driven
+
 **Antes:** O endpoint `CalcularRetencoes` pegava a NF e já inseria um Título Financeiro a pagar na força bruta. Acoplamento enorme.
 **Depois:** O Command `CalcularRetencoesCommandHandler` apenas atualiza a NF e emite um evento local na memória: `EventBus.publish(ImpostosRetidosEvent(doc_id))`.
 No módulo Financeiro, um Listener assíncrono capta a mensagem e gera o Título automaticamente. Se falhar, é feito "retry" ou armazenado em fila Dead-Letter sem quebrar o HTTP Response do usuário.
 
 ### 5. Controle de Transação (Unit of Work via Context Manager)
+
 **Antes:** `db.add()`, `db.commit()` e `db.refresh()` jogados no meio das lógicas IF/ELSE dos rotas.
-**Depois:** 
+**Depois:**
+
 ```python
 with uow:
     doc = uow.documentos.get(id)
@@ -141,6 +149,7 @@ with uow:
 ## 5. Como Migrar? (Roadmap Estratégico)
 
 A reescrita não deve ser um "Big Bang". O padrão **Strangler Fig** será adotado:
+
 1. Começar introduzindo a infraestrutura base (UoW e Repository).
 2. Modificar apenas **uma** rota por vez (Ex: Pegar o endpoint de Obras `PATCH` e migrá-lo para um *Command Handler*).
 3. Uma vez provada a nova arquitetura num fluxo, aplicá-la lateralmente aos demais.

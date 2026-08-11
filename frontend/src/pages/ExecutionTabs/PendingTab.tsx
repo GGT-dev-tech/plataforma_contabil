@@ -60,15 +60,20 @@ export const PendingTab: React.FC<{ executionId: string }> = ({ executionId }) =
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="bg-white/50 dark:bg-gray-900/50 p-4 rounded-xl border border-gray-100 dark:border-gray-800">
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Banco Original</p>
-              <p className="font-medium text-gray-900 dark:text-gray-100">{c.movimentacao_original.historico}</p>
-              <p className="text-lg font-bold mt-2">R$ {parseFloat(c.movimentacao_original.valor).toFixed(2)}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Transação Bancária</p>
+              <p className="font-medium text-gray-900 dark:text-gray-100">{c.transacao_original?.historico || '—'}</p>
+              <p className="text-sm text-gray-400 mt-1">{c.transacao_original?.data || ''}</p>
+              <p className="text-lg font-bold mt-2">R$ {parseFloat(c.transacao_original?.valor || '0').toFixed(2)}</p>
             </div>
             
             <div className="bg-white/50 dark:bg-gray-900/50 p-4 rounded-xl border border-gray-100 dark:border-gray-800">
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">ERP (Parcela Sugerida)</p>
-              <p className="font-medium text-gray-900 dark:text-gray-100">{c.parcela_original.fornecedor} - Doc {c.parcela_original.documento}</p>
-              <p className="text-lg font-bold mt-2">R$ {parseFloat(c.parcela_original.valor).toFixed(2)}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Título Financeiro Sugerido</p>
+              <p className="font-medium text-gray-900 dark:text-gray-100">{c.titulo_original?.fornecedor || '—'}</p>
+              <p className="text-sm text-gray-400 mt-1">{c.titulo_original?.descricao || ''}</p>
+              <p className="text-lg font-bold mt-2">R$ {parseFloat(c.titulo_original?.valor || '0').toFixed(2)}</p>
+              {c.titulo_original?.data_vencimento && (
+                <p className="text-xs text-gray-400 mt-1">Venc: {c.titulo_original.data_vencimento}</p>
+              )}
             </div>
           </div>
 

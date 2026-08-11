@@ -15,24 +15,53 @@ export interface RuleExplanation {
 export interface MatchCandidate {
   id: string;
   execucao_id: string;
-  movimentacao_id: string;
-  parcela_id: string;
+  movimentacao_financeira_id: string;
+  titulo_id: string | null;
+  lancamento_cabecalho_id: string | null;
   score_total: number;
   status: StatusCandidato;
   regras: RuleExplanation[];
-  
-  movimentacao_original: {
+
+  transacao_original: {
     historico: string;
     valor: string;
     data: string | null;
-  };
-  
-  parcela_original: {
-    documento: string;
+  } | null;
+
+  titulo_original: {
+    descricao: string;
     fornecedor: string;
     valor: string;
     data_vencimento: string | null;
-  };
+  } | null;
+
+  lancamento_original: {
+    historico: string;
+    numero_lote: string;
+    total_partidas: number;
+  } | null;
+}
+
+export interface Conciliacao {
+  conciliacao_id: string;
+  status: string;
+  aprovado_por: string | null;
+  data_conciliacao: string | null;
+  score: number;
+  transacao: {
+    historico: string;
+    valor: string;
+    data: string | null;
+  } | null;
+  titulo: {
+    descricao: string;
+    fornecedor: string;
+    valor: string;
+  } | null;
+  lancamento: {
+    historico: string;
+    numero_lote: string;
+  } | null;
 }
 
 export interface Divergencia {

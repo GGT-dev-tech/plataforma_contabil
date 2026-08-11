@@ -2,7 +2,7 @@ import re
 import hashlib
 from typing import List, Optional
 from sqlalchemy.orm import Session
-from app.models.domain import MovimentacaoBancaria, ParcelaDespesa, Fornecedor
+from app.models.financeiro import MovimentacaoFinanceira, TituloFinanceiro
 from app.services.normalization import NormalizationService
 
 class EnrichmentFeatures:
@@ -45,33 +45,33 @@ class EnrichmentService:
         return hashlib.sha256(raw).hexdigest()
 
     @staticmethod
-    def enrich_movimentacoes(movimentacoes: List[MovimentacaoBancaria]):
+    def enrich_movimentacoes(movimentacoes: List[MovimentacaoFinanceira]):
         for mov in movimentacoes:
             features = EnrichmentFeatures()
-            features.chave_pix = EnrichmentService.extract_pix_key(mov.historico)
-            features.cnpj_cpf = EnrichmentService.extract_cnpj(mov.historico)
-            features.numero_nf = EnrichmentService.extract_nf(mov.historico)
-            features.palavras_chave = EnrichmentService.tokenize(mov.historico)
+            features.chave_pix = EnrichmentService.extract_pix_key(mov.descricao_extrato)
+            features.cnpj_cpf = EnrichmentService.extract_cnpj(mov.descricao_extrato)
+            features.numero_nf = EnrichmentService.extract_nf(mov.descricao_extrato)
+            features.palavras_chave = EnrichmentService.tokenize(mov.descricao_extrato)
             
-            # Fingerprint bancário básico (Data + Valor + CP/Chave)
-            target = mov.codigo_cp or features.chave_pix or ""
+            # Fingerprint bancário básico (Data + Valor + Documento)
+            target = mov.documento_banco or features.chave_pix or ""
             features.fingerprint_financeiro = EnrichmentService.generate_fingerprint(
-                str(mov.data), str(abs(mov.valor)), target
+                str(mov.data_transacao), str(abs(mov.valor)), target
             )
             
             mov._features = features
 
     @staticmethod
-    def enrich_parcelas(parcelas: List[ParcelaDespesa], fornecedores_dict: dict):
-        for p in parcelas:
+    def enrich_titulos(titulos: List[TituloFinanceiro]):
+        for t in titulos:
             features = EnrichmentFeatures()
-            fornecedor = fornecedores_dict.get(p.despesa.fornecedor_id)
-            if fornecedor:
-                features.cnpj_cpf = fornecedor.cnpj_cpf # Pode ser None
-                features.palavras_chave = EnrichmentService.tokenize(fornecedor.nome_normalizado)
+            if t.fornecedor_cliente_cnpj_cpf:
+                features.cnpj_cpf = t.fornecedor_cliente_cnpj_cpf
+            if t.fornecedor_cliente_nome:
+                features.palavras_chave = EnrichmentService.tokenize(t.fornecedor_cliente_nome)
                 
             features.fingerprint_financeiro = EnrichmentService.generate_fingerprint(
-                str(p.data_vencimento), str(abs(p.valor)), str(features.palavras_chave)
+                str(t.data_vencimento), str(abs(t.valor_nominal)), str(features.palavras_chave)
             )
             
-            p._features = features
+            t._features = features

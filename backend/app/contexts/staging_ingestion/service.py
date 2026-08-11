@@ -2,9 +2,10 @@ import uuid
 from typing import Dict, Any, List
 from sqlalchemy.orm import Session
 from app.models.domain import (
-    StagingRegistro, TipoStaging, Receita, ParcelaDespesa, 
-    Despesa, Fornecedor, MovimentacaoBancaria, TipoMovimentacao
+    StagingRegistro, TipoStaging, Receita, Fornecedor
 )
+from app.models.financeiro import TituloFinanceiro, TipoTitulo, MovimentacaoFinanceira, TipoMovimentacao
+
 from app.contexts.matching_auditing.engine.tax_engine import TaxEngine
 
 class StagingService:
@@ -66,38 +67,33 @@ class StagingService:
                 self.db.add(forn)
                 self.db.flush()
 
-        desp = Despesa(
-            id=uuid.uuid4(), 
-            execucao_id=exec_id, 
-            fornecedor_id=forn.id if forn else None,
-            valor_total=item.valor, 
-            data_emissao=item.data, 
-            id_uuid_origem=str(uuid.uuid4())
-        )
-        self.db.add(desp)
-        self.db.flush()
-
-        parc = ParcelaDespesa(
-            id=uuid.uuid4(), 
-            despesa_id=desp.id, 
-            numero_parcela=1, 
-            valor=item.valor, 
+        # Criação do Título (substituindo Despesa/ParcelaDespesa)
+        titulo = TituloFinanceiro(
+            id=str(uuid.uuid4()), 
+            empresa_id=item.empresa_id,
+            tipo=TipoTitulo.PAGAR,
+            descricao=item.descricao,
+            fornecedor_cliente_nome=item.entidade_nome,
+            fornecedor_cliente_cnpj_cpf=item.cnpj_cpf,
+            valor_nominal=float(item.valor),
+            data_emissao=item.data,
             data_vencimento=item.data,
-            id_parcela_origem=str(uuid.uuid4())
+            gerado_automaticamente=True
         )
-        self.db.add(parc)
+        self.db.add(titulo)
         taxes = self.tax_engine.process_operation("DESPESA", item.valor)
         tax_summary["total_despesas"] += float(item.valor)
         tax_summary["impostos_retidos"] += sum(float(t.valor_tributo) for t in taxes if t.tipo == "RETIDO")
 
     def _process_movimentacao(self, exec_id: str, item: StagingRegistro):
-        mov = MovimentacaoBancaria(
-            id=uuid.uuid4(), 
-            execucao_id=exec_id, 
-            data=item.data, 
-            historico=item.descricao,
-            valor=item.valor, 
-            tipo=TipoMovimentacao.C if item.valor > 0 else TipoMovimentacao.D
+        mov = MovimentacaoFinanceira(
+            id=str(uuid.uuid4()), 
+            empresa_id=item.empresa_id,
+            tipo=TipoMovimentacao.ENTRADA if item.valor > 0 else TipoMovimentacao.SAIDA,
+            data_transacao=item.data, 
+            descricao_extrato=item.descricao,
+            valor=float(item.valor), 
+            conciliada=False
         )
         self.db.add(mov)
 
