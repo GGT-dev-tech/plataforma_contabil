@@ -85,7 +85,14 @@ def execute_pipeline_core(execucao_id: str, db: Session):
                 # 2.3 Matching Engine
                 orchestrator = MatchOrchestrator(db, execucao_id=execucao_id)
                 stats = orchestrator.run_pipeline()
-                logger.info(f"Pipeline fase 2 concluído: {stats}")
+                logger.info(f"Pipeline fase 2 (Matching) concluído: {stats}")
+                
+                # 2.4 Motor Contábil (Tradução para Partidas Dobradas)
+                if empresa_id:
+                    from app.contexts.accounting.engine import AccountingEngine
+                    accounting_engine = AccountingEngine(db, str(empresa_id))
+                    lancamentos_gerados = accounting_engine.process_all_liquidated()
+                    logger.info(f"Pipeline fase 3 (Contábil) concluído. Lançamentos gerados: {lancamentos_gerados}")
             
         except Exception as e:
             logger.error(f"Erro no pipeline {execucao_id}: {e}")

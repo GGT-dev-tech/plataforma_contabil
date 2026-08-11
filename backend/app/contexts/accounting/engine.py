@@ -156,4 +156,28 @@ class AccountingEngine:
         Gera lançamentos contábeis para todos os títulos liquidados que ainda não possuem lançamento.
         (Em um sistema real, haveria um campo 'lancamento_id' no titulo ou uma tabela associativa)
         """
-        pass
+        # Simplificação: Busca títulos pagos que não estão vinculados a um LancamentoCabecalho
+        titulos_pagos = self.db.query(TituloFinanceiro).filter(
+            TituloFinanceiro.empresa_id == self.empresa_id,
+            TituloFinanceiro.valor_pago != None,
+            TituloFinanceiro.data_pagamento != None
+        ).all()
+        
+        processados = 0
+        for titulo in titulos_pagos:
+            # Verifica se já existe um cabecalho que refere a este titulo
+            existe = self.db.query(LancamentoCabecalho).filter(
+                LancamentoCabecalho.empresa_id == self.empresa_id,
+                LancamentoCabecalho.historico_padrao.like(f"%{titulo.descricao}%") # heurística por falta de FK direta no MVP
+            ).first()
+            
+            if not existe:
+                try:
+                    self.translate_titulo_to_lancamento(titulo)
+                    processados += 1
+                except Exception as e:
+                    # Log the error but continue
+                    print(f"Erro ao contabilizar titulo {titulo.id}: {e}")
+                    
+        self.db.commit()
+        return processados
