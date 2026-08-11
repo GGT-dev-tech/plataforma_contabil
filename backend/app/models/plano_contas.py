@@ -39,6 +39,21 @@ class GrupoConta(str, enum.Enum):
     RESULTADO = "RESULTADO"            # 7 (Contas de Resultado - encerramento)
 
 
+class ClassificacaoDRE(str, enum.Enum):
+    """Classificação específica para montagem estruturada do DRE em cascata."""
+    RECEITA_BRUTA = "RECEITA_BRUTA"
+    DEDUCOES_RECEITA = "DEDUCOES_RECEITA"
+    CSP = "CSP" # Custo dos Serviços Prestados
+    DESPESAS_PESSOAL = "DESPESAS_PESSOAL"
+    DESPESAS_ADMINISTRATIVAS = "DESPESAS_ADMINISTRATIVAS"
+    DESPESAS_INSTALACOES = "DESPESAS_INSTALACOES"
+    DESPESAS_COMERCIAIS = "DESPESAS_COMERCIAIS"
+    OUTRAS_RECEITAS = "OUTRAS_RECEITAS"
+    DISTRIBUICAO_LUCROS = "DISTRIBUICAO_LUCROS"
+    NAO_MAPEADO = "NAO_MAPEADO"
+
+
+
 class PlanoDeContas(AuditableBase):
     """
     Conta contábil do plano de contas da empresa.
@@ -74,6 +89,7 @@ class PlanoDeContas(AuditableBase):
     grupo = Column(Enum(GrupoConta), nullable=False)
     natureza = Column(Enum(NaturezaConta), nullable=False)
     tipo = Column(Enum(TipoConta), default=TipoConta.ANALITICA, nullable=False)
+    classificacao_dre = Column(Enum(ClassificacaoDRE), nullable=True)
 
     # Flags operacionais
     ativa = Column(Boolean, default=True, nullable=False)

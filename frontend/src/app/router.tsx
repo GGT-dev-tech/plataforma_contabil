@@ -3,7 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ProtectedRoute } from '../components/layout/ProtectedRoute';
 
 import { LoginPage } from '../pages/auth/LoginPage';
-import { NewExecution } from '../pages/NewExecution';
+import { NewExecution } from '../pages/StagingUpload';
 import { ExecutionsList } from '../pages/ExecutionsList';
 import { ExecutionView } from '../pages/ExecutionView';
 import { AppShell } from '../components/layout/AppShell';
@@ -38,7 +38,7 @@ export const AppRouter: React.FC = () => {
             </Route>
             
             <Route element={<ProtectedRoute />}>
-              <Route path="/executions/new" element={<NewExecution />} />
+              <Route path="/executions/new" element={<StagingUpload />} />
               <Route path="/settings" element={<WorkspaceSettings />} />
               <Route path="/dashboard" element={<DashboardHome />} />
               <Route path="/crm" element={<CrmPage />} />

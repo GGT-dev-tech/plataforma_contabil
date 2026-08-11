@@ -18,6 +18,7 @@ from app.api.routers.tesouraria import router as tesouraria_router
 from app.api.routers.sincronizacao import router as sincronizacao_router
 from app.api.routers.analytics import router as analytics_router
 from app.api.routers.sped import router as sped_router
+from app.api.routers.reports import router as reports_router
 from app.core.config import settings
 from app.api.deps import get_db
 
@@ -90,6 +91,7 @@ app.include_router(sincronizacao_router, prefix="/api/v1")
 app.include_router(analytics_router, prefix="/api/v1")
 app.include_router(sped_router, prefix="/api/v1")
 app.include_router(fiscal.router, prefix="/api/v1")
+app.include_router(reports_router, prefix="/api/v1")
 app.include_router(auth_router) # Support /auth/login directly
 
 @app.get("/health")

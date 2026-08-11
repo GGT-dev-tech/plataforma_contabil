@@ -7,6 +7,7 @@ from .pdf_generic import GenericPDFAdapter
 from .xml_generic import GenericXMLAdapter
 from .nfe_xml import NFeXMLAdapter
 from .generic_spreadsheet import GenericSpreadsheetAdapter
+from .controle_fiscal_parser import ControleFiscalParser
 
 # Registrar os adapters
 ParserFactory.register(ExtratoInterAdapter())
@@ -15,6 +16,7 @@ ParserFactory.register(RazaoSucessorAdapter())
 ParserFactory.register(GenericPDFAdapter())
 ParserFactory.register(NFeXMLAdapter())    # Prioridade sobre GenericXMLAdapter
 ParserFactory.register(GenericXMLAdapter())  # Fallback XML genérico
+ParserFactory.register(ControleFiscalParser())
 # Generic Spreadsheet deve ser o último para atuar como fallback de planilhas
 ParserFactory.register(GenericSpreadsheetAdapter())
 

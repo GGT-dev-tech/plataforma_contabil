@@ -41,6 +41,10 @@ export const Sidebar: React.FC = () => {
             <Landmark className="w-4 h-4 mr-3" />
             DRE Gerencial
           </NavLink>
+          <NavLink to="/executions/new" className={navItemClass}>
+            <FileSpreadsheet className="w-4 h-4 mr-3" />
+            Upload de Arquivos
+          </NavLink>
           <NavLink to="/executions" className={navItemClass}>
             <CheckCheck className="w-4 h-4 mr-3" />
             Conciliação Bancária

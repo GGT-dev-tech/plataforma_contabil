@@ -8,7 +8,7 @@ import { FileUp, FileSpreadsheet, FileText, FileCode, AlertCircle, CheckCircle2 
 
 type FormState = 'IDLE' | 'LOADING' | 'PROCESSANDO' | 'CONCLUIDO' | 'ERRO';
 
-export const NewExecution: React.FC = () => {
+export const StagingUpload: React.FC = () => {
   const [despesas, setDespesas] = useState<File | null>(null);
   const [razao, setRazao] = useState<File | null>(null);
   const [extrato, setExtrato] = useState<File | null>(null);
@@ -80,8 +80,8 @@ export const NewExecution: React.FC = () => {
   const FileDropzone = ({ label, file, onChange, disabled }: { label: string, file: File | null, onChange: any, disabled: boolean }) => (
     <div className="relative overflow-hidden group h-64 rounded-2xl">
       <div className={`
-        absolute inset-0 border-2 border-dashed rounded-2xl p-6 text-center transition-all duration-300 flex flex-col items-center justify-center
-        ${file ? 'border-primary-500/50 bg-primary-500/10' : 'border-white/20 hover:border-primary-400/60 hover:bg-white/5'}
+        absolute inset-0 border-2 border-dashed rounded-xl p-6 text-center transition-all duration-300 flex flex-col items-center justify-center
+        ${file ? 'border-primary-600/50 bg-primary-50' : 'border-slate-300 hover:border-primary-500 hover:bg-slate-50'}
         ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
       `}>
         <input 
@@ -94,29 +94,29 @@ export const NewExecution: React.FC = () => {
         
         {/* Animated Dashed Border Effect (CSS Only Trick) */}
         {!file && !disabled && (
-          <div className="absolute inset-0 rounded-2xl pointer-events-none border-2 border-transparent group-hover:border-primary-400/30 transition-all"></div>
+          <div className="absolute inset-0 rounded-xl pointer-events-none border-2 border-transparent group-hover:border-primary-300 transition-all"></div>
         )}
         
         <div className="flex flex-col items-center justify-center space-y-4 pointer-events-none relative z-0">
           {file ? (
             <>
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-gray-800 to-gray-900 border border-white/10 flex items-center justify-center shadow-xl">
+              <div className="w-16 h-16 rounded-xl bg-white border border-slate-200 flex items-center justify-center shadow-sm">
                 {getFileIcon(file.name)}
               </div>
               <div className="space-y-2">
-                <p className="font-semibold text-white tracking-wide">{label}</p>
-                <p className="text-sm text-primary-300 truncate max-w-[200px] font-medium">{file.name}</p>
+                <p className="font-bold text-slate-800 tracking-wide">{label}</p>
+                <p className="text-sm text-primary-700 truncate max-w-[200px] font-medium">{file.name}</p>
               </div>
             </>
           ) : (
             <>
-              <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 group-hover:scale-110 group-hover:bg-primary-500/20 transition-all duration-300 shadow-lg">
-                <FileUp className="w-8 h-8 group-hover:text-primary-400" />
+              <div className="w-16 h-16 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-400 group-hover:scale-110 group-hover:bg-primary-100 transition-all duration-300">
+                <FileUp className="w-8 h-8 group-hover:text-primary-600" />
               </div>
               <div className="space-y-1">
-                <p className="font-semibold text-gray-200 tracking-wide group-hover:text-primary-300 transition-colors">{label}</p>
-                <p className="text-xs text-gray-500 uppercase tracking-wider font-medium">Arraste um Arquivo</p>
-                <p className="text-xs text-gray-600">PDF, XML, CSV, XLSX</p>
+                <p className="font-bold text-slate-700 tracking-wide group-hover:text-primary-700 transition-colors">{label}</p>
+                <p className="text-xs text-slate-500 uppercase tracking-wider font-medium">Arraste um Arquivo</p>
+                <p className="text-xs text-slate-400">PDF, XML, CSV, XLSX</p>
               </div>
             </>
           )}
@@ -126,28 +126,29 @@ export const NewExecution: React.FC = () => {
   );
 
   return (
-    <div className="space-y-8 max-w-5xl mx-auto animate-fade-in relative">
-      <div className="absolute top-[20%] left-[50%] w-96 h-96 bg-primary-600/10 rounded-full blur-[100px] -z-10 pointer-events-none translate-x-[-50%]"></div>
-      
-      <Breadcrumb items={[{ label: 'Execuções', href: '/executions' }, { label: 'Nova Conciliação' }]} />
-      <PageHeader title="Nova Conciliação" description="Inicie um novo processo de conciliação enviando os arquivos base (Razão, Extrato e Despesas)." />
+    <div className="space-y-8 max-w-5xl mx-auto">
+      <Breadcrumb items={[{ label: 'Importação', href: '/executions' }, { label: 'Upload de Arquivos' }]} />
+      <div className="mb-4">
+        <h1 className="text-3xl font-bold text-slate-800 mb-2">Central de Upload</h1>
+        <p className="text-slate-500">Inicie um novo processo de ingestão enviando os arquivos base (Razão, Extrato e Despesas).</p>
+      </div>
 
-      <div className="glass rounded-3xl p-8 shadow-2xl relative overflow-hidden">
+      <div className="bg-white rounded-xl p-8 border border-slate-200 shadow-sm">
         {status === 'ERRO' && (
-          <div className="mb-6 p-4 bg-red-500/10 text-red-400 border border-red-500/20 rounded-xl flex items-center gap-3 animate-fade-in backdrop-blur-md">
+          <div className="mb-6 p-4 bg-red-50 text-red-700 border border-red-200 rounded-lg flex items-center gap-3">
             <AlertCircle className="w-5 h-5" />
             <p className="font-medium">{errorMsg}</p>
           </div>
         )}
         
         {status === 'CONCLUIDO' && (
-          <div className="mb-6 p-4 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-xl flex items-center gap-3 animate-fade-in backdrop-blur-md">
+          <div className="mb-6 p-4 bg-green-50 text-green-700 border border-green-200 rounded-lg flex items-center gap-3">
             <CheckCircle2 className="w-5 h-5" />
             <p className="font-medium">Upload concluído! A conciliação foi iniciada. Redirecionando...</p>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-8 relative z-10">
+        <form onSubmit={handleSubmit} className="space-y-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <FileDropzone 
               label="Despesas (ERP)" 
@@ -169,11 +170,11 @@ export const NewExecution: React.FC = () => {
             />
           </div>
 
-          <div className="pt-8 border-t border-white/10 flex justify-end">
+          <div className="pt-8 border-t border-slate-100 flex justify-end">
             <button 
               type="submit" 
               disabled={status === 'LOADING' || status === 'PROCESSANDO' || status === 'CONCLUIDO'}
-              className="glass-button-primary px-8 py-3 text-lg font-semibold tracking-wide disabled:opacity-50 disabled:cursor-not-allowed"
+              className="bg-primary-600 hover:bg-primary-700 text-white px-8 py-3 rounded-lg text-sm font-semibold tracking-wide disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {status === 'IDLE' && 'Iniciar Inteligência Contábil'}
               {status === 'LOADING' && 'Enviando Arquivos...'}
